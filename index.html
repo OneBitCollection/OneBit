@@ -892,6 +892,7 @@ function vEstante(){
   }
   h+='<div class="chips" role="group" aria-label="Filtrar">'+[['all','Tudo'],['plat','Platinas'],['cem','100%'],['jogando','Jogando']].map(x=>'<button class="chip" data-act="filter" data-val="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
   h+=filterPanelHTML();
+  if(!fActive())h+='<button class="btn accent-line" data-act="org">✦ Organizar estante automaticamente</button>';
   const shelf=(name,meta,games,coll)=>'<section class="shelf"><div class="shelf-h"><div><h2>'+esc(name)+'</h2><p>'+meta+'</p></div>'+(coll?'<button class="btn small ghost" data-act="editcoll" data-id="'+coll.id+'">Editar</button>':'')+'</div>'+
     (games.length?chunk(games,shelfPerRow()).map(rw=>'<div class="wall"><div class="row">'+rw.map(g=>'<button class="slot'+((f==='all'||g.status===f||fActive())?'':' dim')+'" data-act="open" data-id="'+g.id+'" aria-label="'+esc(g.title)+' · '+STATUS[g.status]+(fActive()&&fBadge(g)?' · '+fBadge(g):'')+'">'+coverHTML(g)+(fActive()&&fBadge(g)?'<span class="fbadge">'+esc(fBadge(g))+'</span>':'')+'</button>').join('')+'</div><div class="plank"></div></div>').join(''):'<div class="wall"><div class="row"><span class="hint">Prateleira vazia. Toque em Editar para escolher os jogos.</span></div><div class="plank"></div></div>')+'</section>';
   const meta=gs=>{const p=gs.filter(g=>g.status==='plat').length,v=spend(gs);return gs.length+(gs.length===1?' jogo':' jogos')+' · '+p+(p===1?' platina':' platinas')+(gs.some(hasCost)?' · '+fmtMoney(v):'')};
@@ -1242,6 +1243,73 @@ function steamSync(){
   if(store.mcp)return steamSyncClaude();
   UI.steam={msg:'Cole o endereço da sua ponte da Steam (o link .workers.dev da Cloudflare) e toque em Sincronizar.',err:true};render();
 }
+/* ---------- organização automática da estante ---------- */
+const ORG_CRITS=[['franquia','Franquia'],['genero','Gênero'],['status','Progresso'],['plataforma','Plataforma'],['decada','Década'],['dev','Desenvolvedora']];
+const ORG_STATUS={plat:'Platinados',cem:'100%',zerado:'Zerados',jogando:'Jogando agora'};
+function orgCatOf(g){if(!g.baseId||!Array.isArray(CAT))return null;return CAT.find(c=>c.id===g.baseId)||null}
+function orgTitleKey(t){
+  t=String(t||'').replace(/[™®©]/g,'').replace(/[’‘`´]/g,"'").replace(/\s+/g,' ').trim();
+  if(/^LEGO\b/i.test(t))return 'LEGO';
+  let m=/^(.{3,60}?)\s*(?::|\s[-–—]\s)/.exec(t);if(m)t=m[1].trim();
+  m=/^(.{3,60}?)\s+(?:\d+|I{2,3}|IV|VI{0,3}|IX|X)\b/.exec(t);if(m)t=m[1].trim();
+  return t.replace(/\s+(?:\d+|I{2,3}|IV|VI{0,3}|IX|X)$/,'').trim();
+}
+function orgKeys(g,crit){
+  const c=orgCatOf(g);
+  switch(crit){
+    case 'franquia':{const f=g.franchise||(c&&c.franchise)||'';return [f||orgTitleKey(g.title)]}
+    case 'genero':{const gs=gGenres(g);return gs.length?[gs[0]]:[]}
+    case 'status':return [ORG_STATUS[g.status]||'Na fila']
+    case 'plataforma':return [g.platform||'Sem plataforma']
+    case 'decada':{const y=parseInt(g.year||(c&&c.year)||'',10);return y>1970?[String(Math.floor(y/10)*10)+'s']:[]}
+    case 'dev':{const d=g.developer||(c&&c.developer)||'';return d?[d.split(',')[0].trim()]:[]}
+  }
+  return [];
+}
+function orgPlan(crit){
+  const games=Object.values(S.games),groups={},rest=[];
+  const label={};
+  games.forEach(g=>{const raw=orgKeys(g,crit)[0];if(!raw){rest.push(g);return}const k=raw.toLowerCase();if(!label[k])label[k]=raw;(groups[k]=groups[k]||[]).push(g)});
+  if(crit==='franquia'){
+    const keys=Object.keys(groups).sort((a,b)=>a.length-b.length);
+    keys.forEach(k=>{if(!groups[k])return;keys.forEach(l=>{if(l!==k&&groups[l]&&l.startsWith(k+' ')&&k.length>=4){groups[k]=groups[k].concat(groups[l]);delete groups[l]}})});
+    const two=k=>k.split(' ').slice(0,2).join(' ');
+    Object.keys(groups).forEach(k=>{if(!groups[k]||groups[k].length>1||k.split(' ').length<3)return;const p=two(k);
+      const mates=Object.keys(groups).filter(l=>l!==k&&groups[l]&&two(l)===p&&l.split(' ').length>=2);
+      if(mates.length){const all=[k].concat(mates).reduce((a,x)=>a.concat(groups[x]),[]);[k].concat(mates).forEach(x=>delete groups[x]);groups[p]=(groups[p]||[]).concat(all);
+        if(!label[p]){const src=label[k]||k;label[p]=src.split(' ').slice(0,2).join(' ')}}});
+  }
+  const keepAll=crit==='status'||crit==='plataforma'||crit==='decada';
+  let shelves=[];
+  Object.entries(groups).forEach(([k,gs])=>{if(keepAll||gs.length>=2)shelves.push({name:label[k],games:gs});else rest.push(...gs)});
+  if(crit==='status'){const order=['Platinados','100%','Zerados','Jogando agora','Na fila'];shelves.sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name))}
+  else if(crit==='decada')shelves.sort((a,b)=>b.name.localeCompare(a.name));
+  else shelves.sort((a,b)=>b.games.length-a.games.length||a.name.localeCompare(b.name,'pt-BR'));
+  shelves.forEach(x=>x.games.sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR')));
+  if(rest.length)shelves.push({name:'Outros',games:rest.sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR')),other:true});
+  return shelves;
+}
+function orgApply(crit){
+  const plan=orgPlan(crit);
+  S.collectionsBackup=clone(S.collections);
+  const manual=S.collections.filter(c=>!c.auto);
+  const auto=plan.map(x=>({id:rid('c'),name:x.name,gameIds:x.games.map(g=>g.id),auto:crit}));
+  S.collections=manual.concat(auto);
+  save();
+}
+function orgOverlayHTML(){
+  const crit=UI.org.crit,plan=orgPlan(crit),manual=S.collections.filter(c=>!c.auto).length,hadAuto=S.collections.some(c=>c.auto);
+  let h='<div class="overlay" role="dialog" aria-label="Organizar estante"><div class="sheet"><h2 class="px" style="font-size:16px">ORGANIZAR ESTANTE</h2>'+
+    '<p class="muted" style="font-size:13px">Escolha como agrupar. Eu crio uma prateleira para cada grupo.</p>'+
+    '<div class="chips">'+ORG_CRITS.map(x=>'<button class="chip" data-act="orgcrit" data-val="'+x[0]+'" aria-pressed="'+(crit===x[0])+'">'+x[1]+'</button>').join('')+'</div>'+
+    '<div class="list" style="max-height:38vh;overflow:auto">'+plan.map(x=>'<div class="item"><div class="grow"><span class="t">'+esc(x.name)+'</span><span class="s">'+x.games.slice(0,3).map(g=>esc(g.title)).join(' · ')+(x.games.length>3?' …':'')+'</span></div><span class="tag">'+x.games.length+'</span></div>').join('')+'</div>'+
+    '<p class="muted" style="font-size:12px">'+plan.length+(plan.length===1?' prateleira':' prateleiras')+'.'+(manual?(manual===1?' Sua coleção feita à mão continua do jeito que está.':' Suas '+manual+' coleções feitas à mão continuam do jeito que estão.'):'')+(hadAuto?' As prateleiras automáticas anteriores serão trocadas.':'')+'</p>'+
+    '<div class="btn-row"><button class="btn ghost" data-act="orgclose">Cancelar</button><button class="btn primary" data-act="orgapply"'+(plan.length?'':' disabled')+'>ORGANIZAR</button></div>'+
+    (S.collectionsBackup?'<button class="btn small ghost" data-act="orgundo">Desfazer a última organização</button>':'')+
+    (hadAuto?'<button class="btn small ghost" data-act="orgclear">Remover prateleiras automáticas</button>':'')+
+    '</div></div>';
+  return h;
+}
 function vAjustes(){
   const s=S.settings;
   let h=topBar('PERSONALIZAR','back');
@@ -1283,6 +1351,7 @@ function render(){
   if(v==='jogo')attachTilt();
 }
 function renderOverlay(){
+  if(UI.org){$ov.innerHTML=orgOverlayHTML();return}
   if(UI.share){
     $ov.innerHTML='<div class="overlay" role="dialog" aria-label="Card para compartilhar"><div class="sheet"><h2 class="px" style="font-size:16px">SEU CARD</h2><img src="'+UI.share.url+'" alt="Card do jogo para compartilhar"><p class="muted" style="font-size:13px">'+(store.downloads?'Baixe a imagem e poste nos stories.':'Toque e segure a imagem para salvar no celular.')+'</p><div class="btn-row"><button class="btn ghost" data-act="closeov">Fechar</button>'+(store.downloads?'<button class="btn primary" data-act="dlshare">BAIXAR</button>':'')+'</div></div></div>';
   }else if(UI.exportText!=null){
@@ -1697,6 +1766,12 @@ const A={
     catch(e){toast('Não consegui gerar o card agora.')}
   },
   dlshare:async()=>{try{await store.downloads.save({filename:UI.share.name,data:UI.share.blob});toast('Card salvo.')}catch(e){if(e&&e.code!=='declined')toast('Não consegui baixar a imagem. Toque e segure nela para salvar.')}},
+   org:async()=>{UI.org={crit:(S.collections.find(c=>c.auto)||{}).auto||'franquia'};renderOverlay();if(!Array.isArray(CAT)){try{await loadCatalog()}catch(e){}if(UI.org)renderOverlay()}},
+  orgcrit:(el)=>{if(UI.org){UI.org.crit=el.dataset.val;renderOverlay()}},
+  orgclose:()=>{UI.org=null;renderOverlay()},
+  orgapply:()=>{if(!UI.org)return;const n=orgPlan(UI.org.crit).length;orgApply(UI.org.crit);UI.org=null;UI.filter='all';render();window.scrollTo(0,0);toast('Estante organizada em '+n+(n===1?' prateleira.':' prateleiras.'))},
+  orgundo:()=>{if(!S.collectionsBackup)return;S.collections=S.collectionsBackup;delete S.collectionsBackup;save();UI.org=null;render();toast('Organização desfeita.')},
+  orgclear:()=>{S.collectionsBackup=clone(S.collections);S.collections=S.collections.filter(c=>!c.auto);save();UI.org=null;render();toast('Prateleiras automáticas removidas.')},
   closeov:()=>{if(UI.share)URL.revokeObjectURL(UI.share.url);UI.share=null;UI.exportText=null;renderOverlay()},
   copyexport:async()=>{const t=document.getElementById('exporttxt');try{await navigator.clipboard.writeText(UI.exportText);toast('Backup copiado.')}catch(e){if(t){t.focus();t.select()}toast('Selecionei o texto. Copie pelo menu do celular.')}},
   newcoll:()=>{const i=document.getElementById('newcoll');const n=(i&&i.value||'').trim();if(!n){toast('Escreva um nome para a coleção.');if(i)i.focus();return}const c={id:rid('c'),name:n,gameIds:[]};S.collections.push(c);UI.collEdit=c.id;save();render();window.scrollTo(0,0)},

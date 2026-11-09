@@ -2,7 +2,7 @@
 // Código do app: busca a versão nova na rede primeiro (para as atualizações chegarem logo)
 // e usa a cópia guardada quando estiver sem internet.
 // Imagens e fontes: usa a cópia guardada primeiro (mais rápido e economiza dados).
-const VERSION = 'onebit-v6';
+const VERSION = 'onebit-v7';
 const APP = VERSION + '-app';
 const IMG = 'onebit-img';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'base/catalog.js', 'icons/icon-192.png'];
