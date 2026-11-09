@@ -9,6 +9,8 @@
 //       → { steamid, games: [{ appid, name, hours }] }
 //   GET /ach?steamid=<SteamID64>&appid=<id do jogo>
 //       → { achievements: [{ api, name, nameEn, desc, achieved, unlocktime }] }
+//   GET /capa?appids=<id>,<id>,…   (até 50 por vez)
+//       → { capas: { "<appid>": "<link da capa vertical na Steam>" } }
 
 const ORIGENS = [
   'https://onebitcollection.github.io',
@@ -112,6 +114,27 @@ export default {
           unlocktime: a.unlocktime || 0,
         }));
         return json({ achievements }, 200, origin);
+      }
+
+      if (url.pathname === '/capa') {
+        const ids = (url.searchParams.get('appids') || '').split(',').filter(x => /^\d+$/.test(x)).slice(0, 50);
+        if (!ids.length) return json({ erro: 'parametros' }, 400, origin);
+        const input = {
+          ids: ids.map(a => ({ appid: Number(a) })),
+          context: { language: 'brazilian', country_code: 'BR' },
+          data_request: { include_assets: true },
+        };
+        const r = await steam('/IStoreBrowseService/GetItems/v1/', { input_json: JSON.stringify(input) }, key);
+        const items = (r.body && r.body.response && r.body.response.store_items) || [];
+        const capas = {};
+        items.forEach(it => {
+          const a = it.assets || {};
+          const file = a.library_capsule || a.library_capsule_2x || a.main_capsule || a.header;
+          if (it.appid && a.asset_url_format && file) {
+            capas[String(it.appid)] = 'https://shared.steamstatic.com/store_item_assets/' + a.asset_url_format.replace('${FILENAME}', file);
+          }
+        });
+        return json({ capas }, 200, origin);
       }
 
       return json({ erro: 'rota' }, 404, origin);

@@ -627,8 +627,26 @@ function applyTheme(){
 
 /* ---------- utilidades de jogo ---------- */
 function mediaSrc(id){return (S&&S.media&&S.media[id])||('/_blob/'+id)}
-function coverSrc(g){const off=location.protocol==='file:';if(g.coverId&&((S&&S.media&&S.media[g.coverId])||!off))return mediaSrc(g.coverId);return g.coverData?g.coverData:(g.coverPath?((S&&S.media&&S.media[g.coverPath])||g.coverPath):null)}
-document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&t.closest&&t.closest('.cover,.c3d'))t.remove()},true);
+/* capas da Steam que mudaram de endereço: a ponte descobre o link certo; sem ponte, usa a imagem horizontal */
+const CAPAFIX=(()=>{try{return JSON.parse(localStorage.getItem('onebit-capas')||'{}')}catch(e){return {}}})();
+const CAPATMP={};const capaTried=new Set();let capaQueue=new Set(),capaTimer=null,capaRender=null;
+const steamAppOf=u=>{const m=/steamstatic\.com\/(?:store_item_assets\/)?steam\/apps\/(\d+)\//.exec(u||'');return m?m[1]:null};
+function capaSave(){try{localStorage.setItem('onebit-capas',JSON.stringify(CAPAFIX))}catch(e){}}
+function capaRerender(){clearTimeout(capaRender);capaRender=setTimeout(()=>{try{render()}catch(e){}},400)}
+async function capaFlush(){
+  const ids=[...capaQueue];capaQueue=new Set();if(!ids.length)return;
+  let found={};
+  const br=(typeof bridgeURL==='function')?bridgeURL():'';
+  if(br){try{for(let i=0;i<ids.length;i+=50){const r=await fetch(br+'/capa?appids='+ids.slice(i,i+50).join(','),{cache:'no-store'});if(r.ok){const j=await r.json();Object.assign(found,j.capas||{})}}}catch(e){}}
+  ids.forEach(a=>{if(found[a])CAPAFIX[a]=found[a];else CAPATMP[a]='https://shared.steamstatic.com/store_item_assets/steam/apps/'+a+'/header.jpg'});
+  capaSave();capaRerender();
+}
+function coverSrc(g){const off=location.protocol==='file:';if(g.coverId&&((S&&S.media&&S.media[g.coverId])||!off))return mediaSrc(g.coverId);if(g.coverData)return g.coverData;if(!g.coverPath)return null;const m=S&&S.media&&S.media[g.coverPath];if(m)return m;const a=steamAppOf(g.coverPath);return (a&&(CAPAFIX[a]||CAPATMP[a]))||g.coverPath}
+document.addEventListener('error',e=>{const t=e.target;if(!(t&&t.tagName==='IMG'&&t.closest&&t.closest('.cover,.c3d')))return;
+  const src=t.getAttribute('src')||'',a=steamAppOf(src);
+  if(a&&!capaTried.has(a)&&CAPAFIX[a]!==src&&!/header\.jpg/.test(src)){capaTried.add(a);capaQueue.add(a);clearTimeout(capaTimer);capaTimer=setTimeout(capaFlush,300);}
+  else if(a&&CAPAFIX[a]===src&&!/header\.jpg/.test(src)){delete CAPAFIX[a];capaSave();CAPATMP[a]='https://shared.steamstatic.com/store_item_assets/steam/apps/'+a+'/header.jpg';capaRerender()}
+  t.remove()},true);
 function coverHTML(g,extra){
   const src=coverSrc(g);
   return '<div class="cover st-'+g.status+' '+(extra||'')+'" style="--c:'+esc(g.color)+'">'+
