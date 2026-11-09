@@ -1199,7 +1199,7 @@ async function steamSyncBridge(){
       });
     });
     save();
-    let ach=0,plat=0,miss=0,filled=0,fail=0;UI.steam.n=queue.length;
+    let ach=0,plat=0,miss=0,filled=0,fail=0,priv=0;UI.steam.n=queue.length;
     let idx=0;
     const worker=async()=>{
       while(idx<queue.length&&!UI.steam.stop){
@@ -1207,26 +1207,28 @@ async function steamSyncBridge(){
         try{
           let r=null;
           for(let tent=0;tent<3;tent++){
-            try{r=await bridgeGet('/ach?steamid='+steamid+'&appid='+q.g.steamAppId)}catch(e){if(e.code==='privado')throw e;r=null}
+            try{r=await bridgeGet('/ach?steamid='+steamid+'&appid='+q.g.steamAppId)}catch(e){if(e.code==='privado'){r={privado:true};break}r=null}
             if(r&&(r.semConquistas||(r.achievements||[]).length||!r.aviso))break;
             r=null;await sleep(1500*(tent+1));
           }
           if(!r){fail++;UI.steam.i++;continue}
+          if(r.privado){priv++;UI.steam.i++;continue}
           if(r.semConquistas&&!q.g.trophies.length)q.g.noAchievements=true;
           const res=applyAch(q.g,r.achievements||[]);ach+=res.n;if(res.filled)filled++;
           if((r.achievements||[]).length&&!res.matched)miss++;
           q.g.steamHours=q.hours;delete q.g.steamNew;
           if(q.g.trophies.length&&q.g.trophies.every(t=>t.done)&&q.g.status!=='plat'){q.g.status='plat';if(!q.g.finished)q.g.finished=new Date().toISOString().slice(0,10);plat++}
-        }catch(e){if(e.code==='privado')throw e;fail++}
+        }catch(e){fail++}
         await sleep(250);
         UI.steam.i++;steamMsg('Conquistas: '+q.g.title+' ('+UI.steam.i+'/'+queue.length+')');
         if(UI.steam.i%10===0)save();
       }
     };
     await Promise.all([worker(),worker()]);
+    if(priv&&priv===queue.length&&!UI.steam.stop)return end('A Steam não liberou as conquistas: deixe "Meu perfil" e "Detalhes de jogo" como Público na privacidade da Steam. Se acabou de mudar, espere uns 5 minutos e tente de novo.',true);
     S.settings.steamSyncedAt=new Date().toISOString();
     const parts=[];if(added)parts.push(added+(added>1?' jogos novos':' jogo novo'));if(hoursN)parts.push('horas de '+hoursN+(hoursN>1?' jogos':' jogo'));if(ach)parts.push(ach+(ach>1?' conquistas':' conquista'));if(plat)parts.push(plat+(plat>1?' platinas novas':' platina nova'));
-    end((UI.steam&&UI.steam.stop?'Parei no meio. ':'')+(parts.length?'Atualizado: '+parts.join(', ')+'.':'Tudo já estava em dia.')+(miss?' Em '+miss+(miss>1?' jogos':' jogo')+' os nomes das conquistas não bateram com os da Steam.':'')+(fail?' A Steam não respondeu as conquistas de '+fail+(fail>1?' jogos':' jogo')+'. Toque em Sincronizar de novo daqui a pouco que eu tento só esses.':''));
+    end((UI.steam&&UI.steam.stop?'Parei no meio. ':'')+(parts.length?'Atualizado: '+parts.join(', ')+'.':'Tudo já estava em dia.')+(miss?' Em '+miss+(miss>1?' jogos':' jogo')+' os nomes das conquistas não bateram com os da Steam.':'')+(priv?' '+priv+(priv>1?' jogos estão marcados como privados':' jogo está marcado como privado')+' na sua conta Steam, então pulei.':'')+(fail?' A Steam não respondeu as conquistas de '+fail+(fail>1?' jogos':' jogo')+'. Toque em Sincronizar de novo daqui a pouco que eu tento só esses.':''));
   }catch(e){
     if(e.code==='privado')return end('A Steam não liberou os dados: deixe "Detalhes de jogo" como Público em Privacidade no seu perfil da Steam e tente de novo.',true);
     if(e.code==='perfil')return end('A ponte não encontrou esse perfil. Confira o SteamID ou o link.',true);
