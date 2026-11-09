@@ -480,7 +480,7 @@ function baseOf(g){return g&&g.baseId?BASE.find(b=>b.id===g.baseId)||null:null}
 const FRANCHISES=['Todas'].concat(Array.from(new Set(BASE.map(b=>b.franchise))));
 
 /* ---------- estado ---------- */
-const DEFAULT_SETTINGS={theme:'grafite',accent:'#B65CFF',shelf:'grafite',size:'m',glow:16,shine:true,name:'Dani',handle:'dani',bio:'',currency:'BRL',steamId:'',lang:'pt-BR'};
+const DEFAULT_SETTINGS={theme:'grafite',accent:'#B65CFF',shelf:'grafite',size:'m',glow:16,shine:true,name:'Dani',handle:'dani',bio:'',currency:'BRL',steamId:'',steamBridge:'',lang:'pt-BR'};
 let S=null;
 const UI={view:'estante',prev:'estante',filter:'all',gameId:null,form:null,formNew:false,search:'',franchise:'Todas',confirm:null,collEdit:null,share:null,exportText:null,pendingImport:null,steam:null,trShow:{},trBusy:null,trFail:null,sort:'padrao',genre:null,coll:null,fopen:false};
 const store={mode:'memory',ref:null,assets:null,downloads:null,timer:null};
@@ -1027,14 +1027,15 @@ function steamBase(raw){raw=String(raw||'').trim();let m=raw.match(/(\d{17})/);i
 function steamSecHTML(){
   const st=UI.steam,s=S.settings,last=s.steamSyncedAt?new Date(s.steamSyncedAt):null;
   let h='<div class="sec"><h2 class="px" style="font-size:14px">STEAM</h2>'+
-    '<label class="field" for="s-steam">Seu perfil da Steam<input class="input mono" id="s-steam" data-s="steamId" value="'+esc(s.steamId||'')+'" placeholder="SteamID64 ou link do perfil" autocomplete="off"></label>';
+    '<label class="field" for="s-steam">Seu perfil da Steam<input class="input mono" id="s-steam" data-s="steamId" value="'+esc(s.steamId||'')+'" placeholder="SteamID64 ou link do perfil" autocomplete="off"></label>'+
+    '<label class="field" for="s-bridge">Endereço da ponte da Steam<input class="input mono" id="s-bridge" data-s="steamBridge" value="'+esc(s.steamBridge||'')+'" placeholder="https://….workers.dev" autocomplete="off" inputmode="url"></label>';
   if(st&&st.running){
     const pct=st.n?Math.round(st.i/st.n*100):0;
     h+='<p style="font-size:14px">'+esc(st.msg||'Sincronizando…')+'</p><div class="pbar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div><button class="btn ghost" data-act="steamstop">Parar</button>';
   }else{
     h+='<button class="btn primary" data-act="steamsync">SINCRONIZAR STEAM</button>';
     if(st&&st.msg)h+='<p class="'+(st.err?'warn':'muted')+'" style="font-size:14px">'+esc(st.msg)+'</p>';
-    h+='<p class="muted" style="font-size:12px">Puxa jogos novos, horas de jogo e conquistas desbloqueadas direto do seu perfil. Funciona no app Claude do computador: o One Bit lê a Steam pelo navegador do Claude, onde você faz login uma vez.'+(last?' Última sincronização: '+last.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'.':'')+'</p>';
+    h+='<p class="muted" style="font-size:12px">Puxa jogos novos, horas de jogo e conquistas desbloqueadas direto do seu perfil, pela sua ponte na Cloudflare. Seu perfil precisa mostrar os detalhes de jogo como Público.'+(last?' Última sincronização: '+last.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'.':'')+'</p>';
   }
   return h+'</div>';
 }
@@ -1075,7 +1076,7 @@ function markUnlocked(g,text){
 }
 async function keepRaw(key,text){try{if(store.db&&store.uid)await store.db.collection('data/users/'+store.uid+'/library/steamraw').doc(key).set({at:new Date().toISOString(),text:String(text).slice(0,200000)})}catch(e){}}
 function steamMsg(m,extra){Object.assign(UI.steam,{msg:m},extra||{});if(UI.view==='ajustes')render()}
-async function steamSync(){
+async function steamSyncClaude(){
   if(UI.steam&&UI.steam.running)return;
   const base=steamBase(S.settings.steamId);
   UI.steam={running:true,i:0,n:0,msg:'Abrindo a Steam no navegador do Claude…'};render();
@@ -1129,6 +1130,89 @@ async function steamSync(){
     if(c==='not_in_manifest'||c==='approval_required'||c==='cancelled')return end('O navegador do Claude não foi liberado para o One Bit. Toque em Sincronizar e permita quando o app perguntar.',true);
     end('A sincronização parou: '+(e&&e.message||'erro desconhecido')+'. O que já foi lido ficou salvo.',true);
   }
+}
+/* ---------- Steam: sincronizar pela ponte (Cloudflare Worker) ---------- */
+function bridgeURL(){let u=String(S.settings.steamBridge||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u}
+async function bridgeGet(path){
+  const r=await fetch(bridgeURL()+path,{cache:'no-store'});
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok||!j){const e=new Error((j&&j.msg)||('a ponte respondeu '+r.status));e.code=(j&&j.erro)||'http';throw e}
+  return j;
+}
+const achKey=t=>String(t||'').toLowerCase().replace(/[’‘`´]/g,"'").replace(/[“”]/g,'"').replace(/\s+/g,' ').replace(/[\s.!…]+$/,'').trim();
+function applyAch(g,list){
+  if(!list.length)return {n:0,matched:0};
+  if(!g.trophies.length){
+    g.trophies=list.map(a=>({name:a.name||a.nameEn||a.api,desc:a.desc||'',type:'conquista',done:!!a.achieved,dlc:''}));
+    g.trophyTotal=list.length;g.noAchievements=false;
+    return {n:list.filter(a=>a.achieved).length,matched:list.length,filled:true};
+  }
+  const got=new Set();list.forEach(a=>{if(a.achieved){got.add(achKey(a.name));got.add(achKey(a.nameEn))}});got.delete('');
+  const known=new Set();list.forEach(a=>{known.add(achKey(a.name));known.add(achKey(a.nameEn))});
+  let n=0,matched=0;
+  g.trophies.forEach(t=>{const k=achKey(t.name);if(known.has(k))matched++;if(!t.done&&got.has(k)){t.done=true;n++}});
+  return {n,matched};
+}
+async function steamSyncBridge(){
+  if(UI.steam&&UI.steam.running)return;
+  UI.steam={running:true,i:0,n:0,msg:'Falando com a ponte da Steam…'};render();
+  const end=(msg,err)=>{UI.steam={msg,err:!!err};save();render()};
+  if(!String(S.settings.steamId||'').trim())return end('Cole o seu SteamID64 (os 17 números) ou o link do seu perfil da Steam.',true);
+  try{
+    const data=await bridgeGet('/games?perfil='+encodeURIComponent(S.settings.steamId));
+    const steamid=data.steamid,list=data.games||[];
+    if(!list.length)return end('A Steam não mostrou nenhum jogo nesse perfil.',true);
+    const cat={};(CAT||await loadCatalog()||[]).forEach(c=>{if(c.steamAppId)cat[String(c.steamAppId)]=c});
+    const byApp={};Object.values(S.games).forEach(g=>{if(g.steamAppId)(byApp[String(g.steamAppId)]=byApp[String(g.steamAppId)]||[]).push(g)});
+    let added=0,hoursN=0;const queue=[];
+    list.forEach(it=>{
+      let gs=byApp[it.appid];
+      if(!gs){const c=cat[it.appid];
+        const g=Object.assign(blankGame(),c?{baseId:c.id,title:c.title,year:c.year||'',developer:c.developer||'',publisher:c.publisher||'',released:c.released||'',franchise:c.franchise||'',color:c.color||COLORS[0],coverPath:c.coverPath||null}:{title:it.name||('App '+it.appid)},
+          {platform:'Steam',media:'digital',steamAppId:it.appid,importedFrom:'steam',addedAt:Date.now(),steamNew:true});
+        if(!g.coverPath)g.coverPath='https://shared.steamstatic.com/store_item_assets/steam/apps/'+it.appid+'/library_600x900.jpg';
+        S.games[g.id]=g;gs=[g];added++}
+      gs.forEach(g=>{
+        const changed=g.steamHours==null||Math.abs((g.steamHours||0)-it.hours)>=0.05;
+        if(it.hours>0){const hv=String(Math.round(it.hours*10)/10);if(g.hours!==hv){g.hours=hv;hoursN++}}
+        if(g.steamNew||(changed&&!g.noAchievements&&(!g.trophies.length||g.trophies.some(t=>!t.done))))queue.push({g,hours:it.hours});
+        else g.steamHours=it.hours;
+      });
+    });
+    save();
+    let ach=0,plat=0,miss=0,filled=0;UI.steam.n=queue.length;
+    let idx=0;
+    const worker=async()=>{
+      while(idx<queue.length&&!UI.steam.stop){
+        const q=queue[idx++];
+        try{
+          const r=await bridgeGet('/ach?steamid='+steamid+'&appid='+q.g.steamAppId);
+          if(r.semConquistas&&!q.g.trophies.length)q.g.noAchievements=true;
+          const res=applyAch(q.g,r.achievements||[]);ach+=res.n;if(res.filled)filled++;
+          if((r.achievements||[]).length&&!res.matched)miss++;
+          q.g.steamHours=q.hours;delete q.g.steamNew;
+          if(q.g.trophies.length&&q.g.trophies.every(t=>t.done)&&q.g.status!=='plat'){q.g.status='plat';if(!q.g.finished)q.g.finished=new Date().toISOString().slice(0,10);plat++}
+        }catch(e){if(e.code==='privado')throw e;miss++}
+        UI.steam.i++;steamMsg('Conquistas: '+q.g.title+' ('+UI.steam.i+'/'+queue.length+')');
+        if(UI.steam.i%10===0)save();
+      }
+    };
+    await Promise.all([worker(),worker(),worker()]);
+    S.settings.steamSyncedAt=new Date().toISOString();
+    const parts=[];if(added)parts.push(added+(added>1?' jogos novos':' jogo novo'));if(hoursN)parts.push('horas de '+hoursN+(hoursN>1?' jogos':' jogo'));if(ach)parts.push(ach+(ach>1?' conquistas':' conquista'));if(plat)parts.push(plat+(plat>1?' platinas novas':' platina nova'));
+    end((UI.steam&&UI.steam.stop?'Parei no meio. ':'')+(parts.length?'Atualizado: '+parts.join(', ')+'.':'Tudo já estava em dia.')+(miss?' Em '+miss+(miss>1?' jogos':' jogo')+' os nomes das conquistas não bateram com os da Steam.':''));
+  }catch(e){
+    if(e.code==='privado')return end('A Steam não liberou os dados: deixe "Detalhes de jogo" como Público em Privacidade no seu perfil da Steam e tente de novo.',true);
+    if(e.code==='perfil')return end('A ponte não encontrou esse perfil. Confira o SteamID ou o link.',true);
+    if(e.code==='sem_chave'||e.code==='chave')return end(e.message,true);
+    if(e instanceof TypeError)return end('Não consegui falar com a ponte. Confira o endereço dela e sua internet.',true);
+    end('A sincronização parou: '+(e&&e.message||'erro desconhecido')+'. O que já foi lido ficou salvo.',true);
+  }
+}
+function steamSync(){
+  if(bridgeURL())return steamSyncBridge();
+  if(store.mcp)return steamSyncClaude();
+  UI.steam={msg:'Cole o endereço da sua ponte da Steam (o link .workers.dev da Cloudflare) e toque em Sincronizar.',err:true};render();
 }
 function vAjustes(){
   const s=S.settings;
