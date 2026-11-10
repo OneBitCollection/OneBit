@@ -541,7 +541,7 @@ function normalize(raw){
     if(g.status==='plat'||g.status==='cem'){const own=new Set(g.dlcs.filter(d=>d.owned).map(d=>d.id));g.trophies.forEach(t=>{if(!t.dlc||own.has(t.dlc))t.done=true})}
     st.games[k]=g;
   });
-  st.collections=Array.isArray(raw.collections)?raw.collections.map(c=>({id:String(c.id||rid('c')),name:String(c.name||'Sem nome'),gameIds:(Array.isArray(c.gameIds)?c.gameIds:[]).filter(id=>st.games[id])})):[];
+  st.collections=Array.isArray(raw.collections)?raw.collections.map(c=>{const o={id:String(c.id||rid('c')),name:String(c.name||'Sem nome'),gameIds:(Array.isArray(c.gameIds)?c.gameIds:[]).filter(id=>st.games[id])};if(c.auto)o.auto=c.auto;if(c.other||o.name==='Outros')o.other=true;return o}):[];
   return st;
 }
 
@@ -550,7 +550,15 @@ function normalize(raw){
 function packState(data){Object.values(data.games||{}).forEach(g=>{delete g.guide;const def=isPS(g.platform)?'bronze':'conquista';
   g.trophies=(g.trophies||[]).map(t=>{const o={name:t.name};if(t.desc)o.desc=t.desc;if(t.type&&t.type!==def)o.type=t.type;if(t.done)o.done=1;if(t.dlc)o.dlc=t.dlc;return o});
   g.dlcs=(g.dlcs||[]).map(d=>{const o={id:d.id,name:d.name};if(d.kind&&d.kind!=='outro')o.kind=d.kind;if(d.owned)o.owned=1;if(d.included)o.included=1;if(d.via)o.via=d.via;if(d.noAchievements)o.noAchievements=1;if(d.price!=null)o.price=d.price;return o})});return data}
+function isOther(c){return !!(c&&(c.other||c.name==='Outros'))}
+function syncOther(){
+  const os=S.collections.filter(isOther);if(!os.length)return;
+  const inOther=new Set();S.collections.forEach(c=>{if(!isOther(c))c.gameIds.forEach(id=>inOther.add(id))});
+  const ids=Object.values(S.games).filter(g=>!inOther.has(g.id)).sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR')).map(g=>g.id);
+  os.forEach((o,i)=>{o.other=true;o.gameIds=i===0?ids:[]});
+}
 function save(){
+  try{syncOther()}catch(e){}
   clearTimeout(store.timer);
   store.timer=setTimeout(saveNow,450);
 }
@@ -881,6 +889,7 @@ function filterPanelHTML(){
   return h+'</div>';
 }
 function vEstante(){
+  try{syncOther()}catch(e){}
   const c=counts(), s=S.settings, f=UI.filter;
   let h='<div class="top">'+BRAND+'<button class="icon-btn" data-act="go" data-val="ajustes" aria-label="Personalizar">'+ICON.gear+'</button></div>';
   if(S.sample)h+='<div class="banner"><p>Esta estante começa com jogos LEGO de exemplo para você ver como fica. Edite à vontade ou limpe tudo para montar a sua.</p><button class="btn small accent-line" data-act="clearsample">Limpar exemplos</button></div>';
@@ -903,14 +912,36 @@ function vEstante(){
   h+='<div class="newshelf"><h2>NOVA PRATELEIRA</h2><p>Coleção é pessoal. Junte por personagem, por estúdio ou pelo que fizer sentido para você.</p><button class="btn accent-line" data-act="go" data-val="colecoes">'+ICON.plus+' Criar coleção</button></div>';
   return h;
 }
+
+function realColls(id){return S.collections.filter(c=>!isOther(c)&&c.gameIds.includes(id))}
+function collChipsHTML(ed){const gs=gamesList(),nLoose=gs.filter(g=>!realColls(g.id).length).length,cf=UI.collF||'all';
+  return [['all','Todos'],['loose','Sem coleção · '+nLoose],['in','Nesta coleção · '+ed.gameIds.length]].map(x=>'<button class="chip" data-act="collf" data-val="'+x[0]+'" aria-pressed="'+(cf===x[0])+'">'+x[1]+'</button>').join('')}
+function collListHTML(ed){
+  const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const q=norm(UI.collQ).trim(),cf=UI.collF||'all';
+  let gs=gamesList().slice().sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR'));
+  if(cf==='loose')gs=gs.filter(g=>!realColls(g.id).length||(UI.collJust||{})[g.id]);
+  if(cf==='in')gs=gs.filter(g=>ed.gameIds.includes(g.id)||(UI.collJust||{})[g.id]);
+  if(q)gs=gs.filter(g=>norm(g.title).includes(q));
+  if(!gs.length)return '<p class="muted" style="font-size:14px">Nenhum jogo encontrado.</p>';
+  return gs.map(g=>{const on=ed.gameIds.includes(g.id),cs=realColls(g.id);
+    return '<button class="item" style="text-align:left;color:inherit" data-act="colltoggle" data-id="'+g.id+'" aria-pressed="'+on+'"><span class="check" aria-pressed="'+on+'">'+(on?ICON.check:'')+'</span><span class="thumb">'+coverHTML(g)+'</span><span class="grow"><span class="t">'+esc(g.title)+'</span><span class="s">'+(cs.length?esc(cs.map(c=>c.name).join(' · ')):'Sem coleção')+'</span></span></button>'}).join('');
+}
 function vColecoes(){
+  try{syncOther()}catch(e){}
   let h=topBar('COLEÇÕES');
   const ed=UI.collEdit&&S.collections.find(c=>c.id===UI.collEdit);
   if(ed){
     h+='<div class="sec card" style="padding:14px"><label class="field" for="collname">Nome da coleção<input class="input" id="collname" data-cf="name" value="'+esc(ed.name)+'" maxlength="60"></label>'+
-      '<div class="sec-h"><h2>JOGOS NESTA PRATELEIRA</h2><span class="muted mono" style="font-size:13px">'+ed.gameIds.length+'</span></div>';
+      '<div class="sec-h"><h2>JOGOS NESTA PRATELEIRA</h2><span class="muted mono" style="font-size:13px" id="collcount">'+ed.gameIds.length+'</span></div>';
     const gs=gamesList();
-    h+=gs.length?'<div class="list">'+gs.map(g=>{const on=ed.gameIds.includes(g.id);return '<button class="item" style="text-align:left;color:inherit" data-act="colltoggle" data-id="'+g.id+'" aria-pressed="'+on+'"><span class="check" aria-pressed="'+on+'">'+(on?ICON.check:'')+'</span><span class="thumb">'+coverHTML(g)+'</span><span class="grow"><span class="t">'+esc(g.title)+'</span><span class="s">'+STATUS[g.status]+'</span></span></button>'}).join('')+'</div>':'<p class="muted">Adicione jogos à estante primeiro.</p>';
+    if(isOther(ed))h+='<p class="muted" style="font-size:14px">"'+esc(ed.name)+'" se monta sozinha: aqui ficam só os jogos que não estão em nenhuma outra coleção. Para tirar um jogo daqui, coloque ele em outra coleção.</p>';
+    else if(!gs.length)h+='<p class="muted">Adicione jogos à estante primeiro.</p>';
+    else{
+      h+='<label class="search" for="collq">'+ICON.search+'<input id="collq" type="search" placeholder="Buscar jogo pelo nome" value="'+esc(UI.collQ||'')+'" autocomplete="off"></label>';
+      h+='<div class="chips" role="group" aria-label="Mostrar" id="collchips">'+collChipsHTML(ed)+'</div>';
+      h+='<div class="list" id="collist">'+collListHTML(ed)+'</div>';
+    }
     h+='<button class="btn primary" data-act="colldone">PRONTO</button></div>';
   }
   h+='<div class="sec"><label class="field" for="newcoll">Nova coleção<span class="bar"><input class="input" id="newcoll" placeholder="Ex.: Meus Batman, Jogos com meu irmão…" maxlength="60"><button class="btn primary" data-act="newcoll" style="flex:0 0 auto">CRIAR</button></span></label></div>';
@@ -1293,7 +1324,7 @@ function orgApply(crit){
   const plan=orgPlan(crit);
   S.collectionsBackup=clone(S.collections);
   const manual=S.collections.filter(c=>!c.auto);
-  const auto=plan.map(x=>({id:rid('c'),name:x.name,gameIds:x.games.map(g=>g.id),auto:crit}));
+  const auto=plan.map(x=>Object.assign({id:rid('c'),name:x.name,gameIds:x.games.map(g=>g.id),auto:crit},x.other?{other:true}:{}));
   S.collections=manual.concat(auto);
   save();
 }
@@ -1775,8 +1806,9 @@ const A={
   closeov:()=>{if(UI.share)URL.revokeObjectURL(UI.share.url);UI.share=null;UI.exportText=null;renderOverlay()},
   copyexport:async()=>{const t=document.getElementById('exporttxt');try{await navigator.clipboard.writeText(UI.exportText);toast('Backup copiado.')}catch(e){if(t){t.focus();t.select()}toast('Selecionei o texto. Copie pelo menu do celular.')}},
   newcoll:()=>{const i=document.getElementById('newcoll');const n=(i&&i.value||'').trim();if(!n){toast('Escreva um nome para a coleção.');if(i)i.focus();return}const c={id:rid('c'),name:n,gameIds:[]};S.collections.push(c);UI.collEdit=c.id;save();render();window.scrollTo(0,0)},
-  editcoll:(el)=>{UI.collEdit=el.dataset.id;UI.view='colecoes';UI.gameId=null;UI.form=null;UI.confirm=null;render();window.scrollTo(0,0)},
-  colltoggle:(el)=>{const c=S.collections.find(x=>x.id===UI.collEdit),id=el.dataset.id;if(!c)return;c.gameIds=c.gameIds.includes(id)?c.gameIds.filter(x=>x!==id):c.gameIds.concat(id);save();render()},
+  editcoll:(el)=>{UI.collQ='';UI.collF='all';UI.collJust={};UI.collEdit=el.dataset.id;UI.view='colecoes';UI.gameId=null;UI.form=null;UI.confirm=null;render();window.scrollTo(0,0)},
+  colltoggle:(el)=>{const c=S.collections.find(x=>x.id===UI.collEdit),id=el.dataset.id;if(!c||isOther(c))return;c.gameIds=c.gameIds.includes(id)?c.gameIds.filter(x=>x!==id):c.gameIds.concat(id);(UI.collJust=UI.collJust||{})[id]=true;syncOther();save();const l=document.getElementById('collist'),ch=document.getElementById('collchips'),cc=document.getElementById('collcount');if(l){l.innerHTML=collListHTML(c);if(ch)ch.innerHTML=collChipsHTML(c);if(cc)cc.textContent=c.gameIds.length}else render()},
+  collf:(el)=>{UI.collF=el.dataset.val;UI.collJust={};render()},
   colldone:()=>{UI.collEdit=null;render();toast('Prateleira atualizada.')},
   collup:(el)=>{const i=S.collections.findIndex(c=>c.id===el.dataset.id);if(i>0){const t=S.collections[i-1];S.collections[i-1]=S.collections[i];S.collections[i]=t;save();render()}},
   colldown:(el)=>{const i=S.collections.findIndex(c=>c.id===el.dataset.id);if(i>=0&&i<S.collections.length-1){const t=S.collections[i+1];S.collections[i+1]=S.collections[i];S.collections[i]=t;save();render()}},
@@ -1838,6 +1870,7 @@ document.addEventListener('input',e=>{
   if(t.dataset.cd&&UI.cat){UI.cat.dlcs[+t.dataset.i][t.dataset.cd]=t.value;return}
   if(t.dataset.ct&&UI.catAch){UI.catAch[UI.catTab||'steam'][+t.dataset.i][t.dataset.ct]=t.value;return}
   if(t.id==='q'){UI.search=t.value;updateResults();return}
+  if(t.id==='collq'){UI.collQ=t.value;const ed=UI.collEdit&&S.collections.find(c=>c.id===UI.collEdit),l=document.getElementById('collist');if(ed&&l)l.innerHTML=collListHTML(ed);return}
   if(t.dataset.pq){UI.progQ=t.value;const g=S.games[UI.gameId],P=progData(g);if(P){const L=P.lists.find(l=>l.id===(UI.progTab||P.lists[0].id))||P.lists[0];document.getElementById('plist').innerHTML=progListHTML(g,P,L)}return}
   if(t.dataset.f&&UI.form){UI.form[t.dataset.f]=t.value;return}
   if(t.dataset.df&&UI.form){const d=UI.form.dlcs[+t.dataset.i];d[t.dataset.df]=t.value;if(t.dataset.df==='kind'||t.dataset.df==='via'){if(d.via)d.owned=true;fixVia(UI.form);render()}return}
