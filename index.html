@@ -1,4 +1,5 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.segbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-18px 0 0;padding-bottom:2px}.segbar::-webkit-scrollbar{display:none}.seg{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--soft);font:400 11px/1 var(--f-pixel);letter-spacing:.5px}.seg img{width:18px;height:18px;image-rendering:pixelated}.seg.on{border-color:var(--accent);color:var(--fg);background:rgba(var(--accent-rgb),.12);box-shadow:inset 0 -2px 0 var(--accent)}.seg.add{border-style:dashed;color:var(--muted);font:500 13px/1 var(--f-body)}.segtag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);z-index:3;white-space:nowrap;font:400 8px/1.5 var(--f-pixel);padding:0 5px;background:var(--accent);color:var(--ink);pointer-events:none}
+</style>
 <title>One Bit</title>
 <meta name="theme-color" content="#1A1B1F">
 <meta name="apple-mobile-web-app-title" content="One Bit">
@@ -553,8 +554,8 @@ function packState(data){Object.values(data.games||{}).forEach(g=>{delete g.guid
 function isOther(c){return !!(c&&(c.other||c.name==='Outros'))}
 function syncOther(){
   const os=S.collections.filter(isOther);if(!os.length)return;
-  const inOther=new Set();S.collections.forEach(c=>{if(!isOther(c))c.gameIds.forEach(id=>inOther.add(id))});
-  const ids=Object.values(S.games).filter(g=>!inOther.has(g.id)).sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR')).map(g=>g.id);
+  const inOther=new Set();S.collections.forEach(c=>{if(!isOther(c))c.gameIds.forEach(id=>{const x=S.games[id];if(x)groupIds(x).forEach(i=>inOther.add(i))})});
+  const ids=Object.values(S.games).filter(g=>!inOther.has(g.id)&&isPrimary(g)).sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR')).map(g=>g.id);
   os.forEach((o,i)=>{o.other=true;o.gameIds=i===0?ids:[]});
 }
 function save(){
@@ -836,7 +837,55 @@ function dlcSectionHTML(g){
 }
 function gamesList(){return Object.values(S.games).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0))}
 function collsOf(id){return S.collections.filter(c=>c.gameIds.includes(id))}
-function counts(){const gs=Object.values(S.games);return {plat:gs.filter(g=>g.status==='plat').length,cem:gs.filter(g=>g.status==='cem').length,total:gs.length,colls:S.collections.length}}
+
+/* ---------- um jogo, várias plataformas (registros ligados por linkId) ---------- */
+const ST_RANK={plat:4,cem:3,zerado:2,jogando:1};
+function linked(g){if(!g)return [];if(!g.linkId)return [g];const a=Object.values(S.games).filter(x=>x.linkId===g.linkId).sort((x,y)=>(x.addedAt||0)-(y.addedAt||0)||String(x.id).localeCompare(String(y.id)));return a.length?a:[g]}
+function primaryOf(g){return linked(g)[0]||g}
+function isPrimary(g){return primaryOf(g)===g}
+function platName(g){return g.platform||'Sem plataforma'}
+function shelfView(g){const p=primaryOf(g),all=linked(p);if(all.length<2)return p;
+  const best=all.reduce((a,b)=>(ST_RANK[b.status]||0)>(ST_RANK[a.status]||0)?b:a,p);
+  const v=Object.assign({},p,{status:best.status,_segs:all});
+  if(!coverSrc(p)){const withCover=all.find(x=>coverSrc(x));if(withCover)Object.assign(v,{coverId:withCover.coverId,coverData:withCover.coverData,coverPath:withCover.coverPath,baseId:p.baseId||withCover.baseId})}
+  return v}
+function groupIds(g){return linked(g).map(x=>x.id)}
+function shelfList(gs){const seen=new Set(),out=[];gs.forEach(g=>{const p=primaryOf(g);if(seen.has(p.id))return;seen.add(p.id);out.push(shelfView(p))});return out}
+function unlinkGame(g){const rest=linked(g).filter(x=>x!==g);delete g.linkId;if(rest.length===1)delete rest[0].linkId}
+function linkGames(a,b){const id=a.linkId||b.linkId||rid('l');linked(b).forEach(x=>x.linkId=id);linked(a).forEach(x=>x.linkId=id);a.linkId=id;b.linkId=id}
+function segBarHTML(g){
+  const all=linked(g);
+  let h='<div class="segbar" role="tablist" aria-label="Plataformas">';
+  if(all.length>1)h+=all.map(x=>'<button role="tab" class="seg'+(x===g?' on':'')+'" data-act="seg" data-id="'+x.id+'" aria-selected="'+(x===g)+'"><img src="'+MEDAL[x.status]+'" alt=""><span>'+esc(platName(x))+'</span></button>').join('');
+  h+='<button class="seg add" data-act="platadd">+ Plataforma</button></div>';
+  return h;
+}
+function platOverlayHTML(){
+  const g=S.games[UI.gameId];if(!g){UI.plat=null;return ''}
+  const o=UI.plat,mine=new Set(groupIds(g));
+  const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const key=norm(shortTitle(g.title)).split(/[:\-–]/)[0].trim();
+  let cands=gamesList().filter(x=>!mine.has(x.id)&&isPrimary(x));
+  const q=norm(o.q).trim();
+  if(q)cands=cands.filter(x=>norm(x.title).includes(q));else cands=cands.filter(x=>key&&norm(x.title).includes(key));
+  cands.sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR'));
+  let h='<div class="overlay" role="dialog" aria-label="Outra plataforma"><div class="sheet"><h2 class="px" style="font-size:16px">OUTRA PLATAFORMA</h2>'+
+    '<p class="muted" style="font-size:13px">Cada plataforma fica com as próprias conquistas, horas, status e valor pago, debaixo da mesma capa.</p>'+
+    '<h3 class="px" style="font-size:12px">JÁ ESTÁ NA ESTANTE?</h3>'+
+    '<label class="search" for="platq">'+ICON.search+'<input id="platq" type="search" placeholder="Buscar jogo para juntar" value="'+esc(o.q||'')+'" autocomplete="off"></label>'+
+    '<div class="list" id="platlist" style="max-height:30vh;overflow:auto">'+platListHTML(cands,q)+'</div>'+
+    '<h3 class="px" style="font-size:12px;margin-top:6px">OU CRIE O REGISTRO NOVO</h3>'+
+    '<label class="field" for="platname">Plataforma<input class="input" id="platname" list="platopts" placeholder="Ex.: Steam, Android, PS5, Switch" value="'+esc(o.name||'')+'" autocomplete="off"></label>'+
+    '<datalist id="platopts">'+['Steam','PC','Android','iOS','PS5','PS4','PS3','Xbox Series','Xbox One','Switch','Epic Games','Game Pass'].map(x=>'<option value="'+x+'">').join('')+'</datalist>'+
+    (g.trophies.length?'<button class="switch" data-act="platcopy" aria-pressed="'+!!o.copy+'"><span class="grow"><span>Copiar a lista de conquistas</span><small>Vem toda desmarcada. Só use se a lista for igual nessa plataforma.</small></span><span class="track"><span></span></span></button>':'')+
+    '<div class="btn-row"><button class="btn ghost" data-act="platclose">Cancelar</button><button class="btn primary" data-act="platcreate">CRIAR</button></div></div></div>';
+  return h;
+}
+function platListHTML(cands,q){
+  if(!cands.length)return '<p class="muted" style="font-size:13px">'+(q?'Nenhum jogo encontrado.':'Nenhum jogo com nome parecido. Busque pelo nome acima.')+'</p>';
+  return cands.slice(0,40).map(x=>'<button class="item" style="text-align:left;color:inherit" data-act="platjoin" data-id="'+x.id+'"><span class="thumb">'+coverHTML(x)+'</span><span class="grow"><span class="t">'+esc(x.title)+'</span><span class="s">'+esc(platName(x))+(linked(x).length>1?' + '+(linked(x).length-1):'')+' · '+STATUS[x.status]+'</span></span><span class="tag">JUNTAR</span></button>').join('');
+}
+function counts(){const gs=Object.values(S.games);return {plat:gs.filter(g=>g.status==='plat').length,cem:gs.filter(g=>g.status==='cem').length,total:gs.filter(isPrimary).length,colls:S.collections.length}}
 
 /* ---------- telas ---------- */
 function topBar(title,backAct,right){
@@ -903,11 +952,12 @@ function vEstante(){
   h+=filterPanelHTML();
   if(!fActive())h+='<button class="btn accent-line" data-act="org">✦ Organizar estante automaticamente</button>';
   const shelf=(name,meta,games,coll)=>'<section class="shelf"><div class="shelf-h"><div><h2>'+esc(name)+'</h2><p>'+meta+'</p></div>'+(coll?'<button class="btn small ghost" data-act="editcoll" data-id="'+coll.id+'">Editar</button>':'')+'</div>'+
-    (games.length?chunk(games,shelfPerRow()).map(rw=>'<div class="wall"><div class="row">'+rw.map(g=>'<button class="slot'+((f==='all'||g.status===f||fActive())?'':' dim')+'" data-act="open" data-id="'+g.id+'" aria-label="'+esc(g.title)+' · '+STATUS[g.status]+(fActive()&&fBadge(g)?' · '+fBadge(g):'')+'">'+coverHTML(g)+(fActive()&&fBadge(g)?'<span class="fbadge">'+esc(fBadge(g))+'</span>':'')+'</button>').join('')+'</div><div class="plank"></div></div>').join(''):'<div class="wall"><div class="row"><span class="hint">Prateleira vazia. Toque em Editar para escolher os jogos.</span></div><div class="plank"></div></div>')+'</section>';
+    (games.length?chunk(games,shelfPerRow()).map(rw=>'<div class="wall"><div class="row">'+rw.map(g=>'<button class="slot'+((f==='all'||g.status===f||fActive())?'':' dim')+'" data-act="open" data-id="'+g.id+'" aria-label="'+esc(g.title)+' · '+STATUS[g.status]+(fActive()&&fBadge(g)?' · '+fBadge(g):'')+'">'+coverHTML(g)+(g._segs?'<span class="segtag">'+g._segs.length+' plataformas</span>':'')+(fActive()&&fBadge(g)?'<span class="fbadge">'+esc(fBadge(g))+'</span>':'')+'</button>').join('')+'</div><div class="plank"></div></div>').join(''):'<div class="wall"><div class="row"><span class="hint">Prateleira vazia. Toque em Editar para escolher os jogos.</span></div><div class="plank"></div></div>')+'</section>';
   const meta=gs=>{const p=gs.filter(g=>g.status==='plat').length,v=spend(gs);return gs.length+(gs.length===1?' jogo':' jogos')+' · '+p+(p===1?' platina':' platinas')+(gs.some(hasCost)?' · '+fmtMoney(v):'')};
   if(fActive()){const gs=fResult(f);h+=gs.length?shelf('Resultado',meta(gs),gs,null):'<div class="empty"><p>Nenhum jogo com esses filtros.</p><button class="btn small ghost" data-act="fclear">Limpar filtros</button></div>';return h}
-  S.collections.forEach(col=>{const gs=col.gameIds.map(id=>S.games[id]).filter(Boolean);h+=shelf(col.name,meta(gs),gs,col)});
-  const loose=gamesList().filter(g=>!S.collections.some(col=>col.gameIds.includes(g.id)));
+  S.collections.forEach(col=>{const gs=shelfList(col.gameIds.map(id=>S.games[id]).filter(Boolean));h+=shelf(col.name,meta(gs),gs,col)});
+  const inColl=new Set();S.collections.forEach(col=>col.gameIds.forEach(id=>{const x=S.games[id];if(x)groupIds(x).forEach(i=>inColl.add(i))}));
+  const loose=shelfList(gamesList().filter(g=>!inColl.has(g.id)));
   if(loose.length)h+=shelf('Sem coleção',meta(loose),loose,null);
   h+='<div class="newshelf"><h2>NOVA PRATELEIRA</h2><p>Coleção é pessoal. Junte por personagem, por estúdio ou pelo que fizer sentido para você.</p><button class="btn accent-line" data-act="go" data-val="colecoes">'+ICON.plus+' Criar coleção</button></div>';
   return h;
@@ -1024,15 +1074,16 @@ function vForm(){
 }
 function vJogo(){
   const g=S.games[UI.gameId]; if(!g){UI.view='estante';return vEstante()}
-  const src=coverSrc(g), p=prog(g), cs=collsOf(g.id), endLabel=g.status==='plat'?'Platinei em':g.status==='cem'?'Completei em':'Terminei em';
+  const src=coverSrc(g)||coverSrc(shelfView(g)), p=prog(g), cs=collsOf(g.id), endLabel=g.status==='plat'?'Platinei em':g.status==='cem'?'Completei em':'Terminei em';
   let h=topBar('','back','<button class="btn small accent-line" data-act="edit">'+ICON.edit+' Editar</button>');
   h+='<div class="c3d-wrap idle" id="c3d"><div class="c3d st-'+g.status+'" style="--c:'+esc(g.color)+'">'+(src?'<img src="'+esc(src)+'" alt="Capa de '+esc(g.title)+'">':'<i class="p1"></i><i class="p2"></i><i class="p3"></i><span class="ct">'+esc(g.title)+'</span>')+'<img class="medal" src="'+MEDAL[g.status]+'" alt="">'+(S.settings.shine?'<span class="shine"></span>':'')+'</div></div>';
+  h+=segBarHTML(g);
   h+='<div class="sec" style="gap:8px"><span class="badge-st'+(g.status==='plat'?' plat':'')+'"><img src="'+MEDAL[g.status]+'" alt="">'+STATUS[g.status].toUpperCase()+'</span><h1 class="px" style="font-size:22px;line-height:1.2">'+esc(g.title)+'</h1><p class="muted" style="font-size:13px">'+esc([g.developer,g.year].filter(Boolean).join(' · '))+'</p></div>';
   if(p)h+='<div class="prog"><div class="sec-h" style="font-size:13px"><span style="color:var(--soft)">Troféus</span><span class="mono">'+p.label+'</span></div><div class="meter"><span style="width:'+p.pct+'%"></span></div></div>';
   const row=(k,v,mono)=>'<div><dt>'+k+'</dt><dd'+(mono?' class="mono"':'')+'>'+(v||'<span class="muted">—</span>')+'</dd></div>';
   h+='<div class="sec"><h2 class="px" style="font-size:14px">FICHA</h2><dl class="ficha" style="margin:0">'+
     row('Desenvolvedora',esc(g.developer))+row('Publicadora',esc(g.publisher))+row('Lançamento',esc(fmtDate(g.released)||g.year),true)+row('Franquia',esc(g.franchise))+
-    row('Joguei no',esc(g.platform))+row('Minha cópia',g.media==='fisica'?'Física':g.media==='digital'?'Digital':'')+
+    row('Joguei no',esc(g.platform)+(linked(g).length>1?' <button class="btn small ghost" data-act="platunlink" style="display:inline-flex;margin-left:8px;min-height:30px">Separar</button>':''))+row('Minha cópia',g.media==='fisica'?'Física':g.media==='digital'?'Digital':'')+
     row('Comecei em',esc(fmtDate(g.started)),true)+row(endLabel,esc(fmtDate(g.finished)),true)+row('Tempo de jogo',g.hours?esc(g.hours)+' h':'',true)+
     row('Dificuldade',g.difficulty?'<span class="dots">'+Array.from({length:10},(_,i)=>'<i'+(i<g.difficulty?' class="on"':'')+'></i>').join('')+'</span>'+g.difficulty+'/10':'',true)+
     row('Minha nota',g.rating==null?'':'<span style="color:var(--accent)">'+g.rating+'/10</span>',true)+'</dl></div>';
@@ -1383,6 +1434,7 @@ function render(){
 }
 function renderOverlay(){
   if(UI.org){$ov.innerHTML=orgOverlayHTML();return}
+  if(UI.plat){$ov.innerHTML=platOverlayHTML();const i=document.getElementById('platq');return}
   if(UI.share){
     $ov.innerHTML='<div class="overlay" role="dialog" aria-label="Card para compartilhar"><div class="sheet"><h2 class="px" style="font-size:16px">SEU CARD</h2><img src="'+UI.share.url+'" alt="Card do jogo para compartilhar"><p class="muted" style="font-size:13px">'+(store.downloads?'Baixe a imagem e poste nos stories.':'Toque e segure a imagem para salvar no celular.')+'</p><div class="btn-row"><button class="btn ghost" data-act="closeov">Fechar</button>'+(store.downloads?'<button class="btn primary" data-act="dlshare">BAIXAR</button>':'')+'</div></div></div>';
   }else if(UI.exportText!=null){
@@ -1671,6 +1723,23 @@ const A={
   go:(el)=>go(el.dataset.val),
   filter:(el)=>{UI.filter=el.dataset.val;render()},
   open:(el)=>openGame(el.dataset.id),
+  seg:(el)=>{const id=el.dataset.id;if(!S.games[id])return;UI.gameId=id;UI.achOpen=null;render();},
+  platadd:()=>{UI.plat={q:'',name:'',copy:false};renderOverlay()},
+  platclose:()=>{UI.plat=null;renderOverlay()},
+  platcopy:()=>{if(!UI.plat)return;const n=document.getElementById('platname');if(n)UI.plat.name=n.value;UI.plat.copy=!UI.plat.copy;renderOverlay()},
+  platjoin:(el)=>{const g=S.games[UI.gameId],o=S.games[el.dataset.id];if(!g||!o)return;linkGames(g,o);
+    const p=primaryOf(g);S.collections.forEach(c=>{if(groupIds(p).some(i=>c.gameIds.includes(i))&&!c.gameIds.includes(p.id))c.gameIds.push(p.id)});
+    UI.plat=null;save();renderOverlay();render();toast(esc(shortTitle(o.title))+' agora está na mesma capa.')},
+  platcreate:()=>{const g=S.games[UI.gameId];if(!g||!UI.plat)return;const n=document.getElementById('platname'),name=(n?n.value:UI.plat.name||'').trim();
+    if(!name){toast('Diga qual é a plataforma.');if(n)n.focus();return}
+    if(linked(g).some(x=>(x.platform||'').toLowerCase()===name.toLowerCase())){toast('Essa plataforma já está nesta capa.');return}
+    const ng=Object.assign(blankGame(),{baseId:g.baseId,title:g.title,year:g.year,developer:g.developer,publisher:g.publisher,released:g.released,franchise:g.franchise,color:g.color,coverId:g.coverId,coverData:g.coverData,coverPath:g.coverPath,platform:name,status:'jogando',noAchievements:g.noAchievements,
+      trophies:UI.plat.copy?g.trophies.map(t=>{const c=Object.assign({},t);c.done=false;return c}):[],trophyTotal:UI.plat.copy?g.trophyTotal:null,dlcs:(g.dlcs||[]).map(d=>({id:d.id,name:d.name,kind:d.kind,noAchievements:d.noAchievements}))});
+    S.games[ng.id]=ng;linkGames(g,ng);UI.plat=null;UI.gameId=ng.id;save();renderOverlay();render();toast('Registro de '+name+' criado.')},
+  platunlink:()=>{const g=S.games[UI.gameId];if(!g)return;const p=primaryOf(g),others=linked(g).filter(x=>x!==g);unlinkGame(g);
+    if(g===p&&others.length)S.collections.forEach(c=>{if(c.gameIds.includes(g.id)&&!others.some(o=>c.gameIds.includes(o.id)))c.gameIds.push(others[0].id)});
+    save();render();toast('Plataforma separada: agora tem capa própria.')},
+
   back:()=>{if(UI.view==='prog'){UI.view='jogo';render();window.scrollTo(0,0);return}if(UI.view==='ajustes'){go('perfil');return}if(UI.view==='base'){go('ajustes');return}if(UI.view==='baseedit'){UI.view='base';UI.confirm=null;render();window.scrollTo(0,0);return}go(UI.prev||'estante')},
   edit:()=>startForm(S.games[UI.gameId],false),
   cancel:()=>{if(UI.form&&store.assets){const old=S.games[UI.form.id];const keep=old?old.prints:[];UI.form.prints.filter(p=>!keep.includes(p)).forEach(p=>store.assets.delete(p).catch(()=>{}))}const id=UI.form&&!UI.formNew?UI.form.id:null;UI.form=null;if(id){UI.view='jogo';UI.gameId=id;render();window.scrollTo(0,0)}else go(UI.prev||'adicionar')},
@@ -1712,7 +1781,7 @@ const A={
     UI.form=null;UI.view='jogo';UI.gameId=f.id;render();window.scrollTo(0,0);
   },
   askdelgame:()=>{UI.confirm='delgame';render()},
-  delgame:()=>{const id=UI.form.id;delete S.games[id];S.collections.forEach(c=>c.gameIds=c.gameIds.filter(x=>x!==id));save();toast('Jogo removido.');go(UI.prev==='jogo'?'estante':(UI.prev||'estante'))},
+  delgame:()=>{const id=UI.form.id,dg=S.games[id];if(dg&&dg.linkId){const rest=linked(dg).filter(x=>x!==dg);S.collections.forEach(c=>{if(c.gameIds.includes(id)&&rest.length&&!rest.some(o=>c.gameIds.includes(o.id)))c.gameIds.push(rest[0].id)});if(rest.length===1)delete rest[0].linkId}delete S.games[id];S.collections.forEach(c=>c.gameIds=c.gameIds.filter(x=>x!==id));save();toast('Jogo removido.');go(UI.prev==='jogo'?'estante':(UI.prev||'estante'))},
   unconfirm:()=>{UI.confirm=null;UI.pendingImport=null;render()},
   fdlcadd:()=>{UI.form.dlcs=UI.form.dlcs||[];UI.form.dlcs.push({id:rid('d'),name:'',kind:'fases',owned:true,noAchievements:false});render();const n=document.getElementById('dn'+(UI.form.dlcs.length-1));if(n)n.focus()},
   fdlcdel:(el)=>{const d=UI.form.dlcs.splice(+el.dataset.i,1)[0];if(d)UI.form.trophies.forEach(t=>{if(t.dlc===d.id)t.dlc=''});render()},
@@ -1870,6 +1939,7 @@ document.addEventListener('input',e=>{
   if(t.dataset.cd&&UI.cat){UI.cat.dlcs[+t.dataset.i][t.dataset.cd]=t.value;return}
   if(t.dataset.ct&&UI.catAch){UI.catAch[UI.catTab||'steam'][+t.dataset.i][t.dataset.ct]=t.value;return}
   if(t.id==='q'){UI.search=t.value;updateResults();return}
+  if(t.id==='platq'&&UI.plat){UI.plat.q=t.value;const g=S.games[UI.gameId],l=document.getElementById('platlist');if(g&&l){const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),mine=new Set(groupIds(g)),q=norm(t.value).trim();let c=gamesList().filter(x=>!mine.has(x.id)&&isPrimary(x)&&(!q||norm(x.title).includes(q)));c.sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR'));l.innerHTML=platListHTML(c,q)}return}
   if(t.id==='collq'){UI.collQ=t.value;const ed=UI.collEdit&&S.collections.find(c=>c.id===UI.collEdit),l=document.getElementById('collist');if(ed&&l)l.innerHTML=collListHTML(ed);return}
   if(t.dataset.pq){UI.progQ=t.value;const g=S.games[UI.gameId],P=progData(g);if(P){const L=P.lists.find(l=>l.id===(UI.progTab||P.lists[0].id))||P.lists[0];document.getElementById('plist').innerHTML=progListHTML(g,P,L)}return}
   if(t.dataset.f&&UI.form){UI.form[t.dataset.f]=t.value;return}
