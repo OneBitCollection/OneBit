@@ -653,7 +653,7 @@ async function capaFlush(){
   ids.forEach(a=>{if(found[a])CAPAFIX[a]=found[a];else CAPATMP[a]='https://shared.steamstatic.com/store_item_assets/steam/apps/'+a+'/header.jpg'});
   capaSave();capaRerender();
 }
-function coverSrc(g){const off=location.protocol==='file:';if(g.coverId&&((S&&S.media&&S.media[g.coverId])||!off))return mediaSrc(g.coverId);if(g.coverData)return g.coverData;if(!g.coverPath)return null;const m=S&&S.media&&S.media[g.coverPath];if(m)return m;const a=steamAppOf(g.coverPath);return (a&&(CAPAFIX[a]||CAPATMP[a]))||g.coverPath}
+function coverSrc(g){const off=location.protocol==='file:';if(g.coverId&&((S&&S.media&&S.media[g.coverId])||!off))return mediaSrc(g.coverId);if(g.coverData)return g.coverData;if(!g.coverPath){const b=g.baseId&&typeof baseOf==='function'?baseOf(g):null;return b&&b.coverPath&&!/^https?:/.test(b.coverPath)?b.coverPath:null}const m=S&&S.media&&S.media[g.coverPath];if(m)return m;const a=steamAppOf(g.coverPath);return (a&&(CAPAFIX[a]||CAPATMP[a]))||g.coverPath}
 document.addEventListener('error',e=>{const t=e.target;if(!(t&&t.tagName==='IMG'&&t.closest&&t.closest('.cover,.c3d')))return;
   const src=t.getAttribute('src')||'',a=steamAppOf(src);
   if(a&&!capaTried.has(a)&&CAPAFIX[a]!==src&&!/header\.jpg/.test(src)){capaTried.add(a);capaQueue.add(a);clearTimeout(capaTimer);capaTimer=setTimeout(capaFlush,300);}
