@@ -9,6 +9,7 @@
 .ptile.gray.st-d{border-color:var(--gold);box-shadow:0 0 14px rgba(232,184,74,.3);background:linear-gradient(180deg,rgba(232,184,74,.12),var(--surface) 65%)}
 .pball{position:absolute;top:6px;right:6px;width:20px;height:20px;background:#E3350D;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center}.pball svg{width:14px;height:14px}
 .ptn{font-size:10px;color:var(--muted)}.ptl{font-size:12.5px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}.pts{font-size:11px;color:var(--muted);line-height:1.25}
+
 </style>
 <title>One Bit</title>
 <meta name="theme-color" content="#1A1B1F">
@@ -352,6 +353,75 @@ details.pcat[open]>summary{border-bottom:1px solid var(--line)}
 .warn{color:#FFB4A8}
 .trbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0}.s.orig{display:block;opacity:.6;font-size:11px}
 .fbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:-4px 0 12px}.fpanel{border:1px solid var(--line,rgba(255,255,255,.1));border-radius:12px;padding:12px 14px;margin:0 0 16px}.fpanel h3{font:600 11px/1.2 var(--mono,monospace);letter-spacing:.8px;margin:12px 0 8px}.fpanel h3:first-child{margin-top:0}.slot{position:relative}.fbadge{position:absolute;left:4px;right:4px;bottom:4px;z-index:3;text-align:center;font:600 11px/1.6 var(--mono,monospace);color:#fff;background:rgba(18,18,22,.86);border:1px solid var(--accent,#B65CFF);border-radius:6px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+/* ---------- novo visual (v2) ---------- */
+:root{--r-s:8px;--r-m:12px;--r-l:16px}
+.card,.item,.stat,.dlc,.ficha,.empty,.banner,.trow,.switch,.pm,details.pcat,.prow,.ptile,.sheet,.newshelf,.fpanel,.jcard,.pcard{border-radius:var(--r-m)}
+.ficha{overflow:hidden}
+.btn,.input,.select,.textarea,.search,.icon-btn,.add-btn,.stepper button,.shot,.shot-add{border-radius:var(--r-m)}
+.chip{border-radius:999px}
+.check,.ptog,.troph-ico{border-radius:var(--r-s)}
+.search{border:1px solid var(--line);box-shadow:none;background:var(--surface)}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
+.cover{border-radius:6px}
+.cover>img:not(.medal){border-radius:6px}
+.wall{border-radius:var(--r-l) var(--r-l) 0 0;background:linear-gradient(180deg,rgba(var(--accent-rgb),.10),var(--wall) 55%)}
+.plank{border-radius:0 0 6px 6px}
+.sec-h h2,.sec>h2.px{letter-spacing:1px}
+.avatar-btn{border:2px solid var(--accent);font:400 13px/1 var(--f-pixel);text-transform:uppercase;color:var(--fg)}
+.hello{display:flex;flex-direction:column;gap:4px;margin-top:-6px}
+.hnums{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--soft);align-items:baseline}
+.hnums b{font-size:24px;font-weight:500;color:var(--fg);margin-right:2px}.hnums b.hi{color:var(--accent)}
+.cont .controw{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:2px 16px 4px 2px;margin:0 -16px 0 -2px}
+.contcard{flex:0 0 236px;width:auto;flex-direction:row;align-items:center;gap:12px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);--cw:62px;text-align:left}
+.contcard:first-child{border-color:rgba(var(--accent-rgb),.5);background:linear-gradient(135deg,rgba(var(--accent-rgb),.16),var(--surface) 60%)}
+.contcard .cover img.medal{display:none}
+.cinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.contcard .ct2{font-weight:600;font-size:15px;color:var(--fg);-webkit-line-clamp:1}
+.cpl{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contcard .achbar{height:4px;border:0;border-radius:2px;background:var(--line)}
+.achbar{border-radius:3px}
+.ghero{position:relative;margin:-20px -16px 0;padding:16px 16px 4px;overflow:hidden;display:flex;flex-direction:column;gap:18px}
+.gbg{position:absolute;left:-40px;right:-40px;top:-40px;width:calc(100% + 80px);height:420px;object-fit:cover;filter:blur(28px) saturate(1.3);opacity:.75;pointer-events:none}
+.ghero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,20,24,.15),var(--bg) 92%);pointer-events:none}
+.ghero>*:not(.gbg){position:relative;z-index:1}
+.gtop{display:flex;justify-content:space-between;align-items:center}
+.glass{background:rgba(20,20,24,.55);border:1px solid rgba(255,255,255,.14);color:var(--fg)}
+.ghead{display:flex;gap:16px;align-items:flex-end}
+.gcov{--cw:118px;box-shadow:0 18px 30px rgba(0,0,0,.6)}
+.gcov img.medal{width:40px}
+.ginfo{display:flex;flex-direction:column;gap:8px;min-width:0;padding-bottom:4px}
+.ginfo h1{font-size:22px;line-height:1.15;overflow-wrap:anywhere}
+.ginfo p{font-size:13px;color:var(--soft)}
+.segbar{margin:0;padding:4px;gap:6px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
+.seg{flex:1 0 auto;justify-content:center;border:0;border-radius:9px;min-height:38px}
+.seg.on{background:var(--accent);color:var(--ink);box-shadow:none}
+.seg.add{flex:0 0 auto;border:1px dashed var(--line2)}
+.jsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.jcard{padding:10px 12px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:5px;min-width:0}
+.jl{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jv{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jcard .achbar{height:4px;border:0;background:var(--line)}
+.jtabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:0 -16px;padding:0 16px}
+.jtabs button{flex:1;min-height:46px;border:0;background:transparent;color:var(--muted);font:400 11px/1 var(--f-pixel);letter-spacing:.5px}
+.jtabs button[aria-selected="true"]{color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.titem[aria-pressed="true"]{border-color:rgba(var(--accent-rgb),.5);background:linear-gradient(90deg,rgba(var(--accent-rgb),.12),var(--surface) 70%)}
+.pcard{padding:16px;background:radial-gradient(circle at 85% 0%,rgba(var(--accent-rgb),.32),var(--surface) 60%);border:1px solid rgba(var(--accent-rgb),.4);display:flex;flex-direction:column;gap:14px}
+.pcard .avatar.big{width:64px;height:64px;font-size:22px;border-radius:var(--r-l)}
+.pnums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pnums div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pnums b{font-size:22px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pnums b.hi{color:var(--accent)}
+.pnums span{font-size:11px;color:var(--soft)}
+.pvit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.pvit .slot{--cw:100%}.pvit .cover{width:100%}
+.pmore{aspect-ratio:2/3;border:1px dashed var(--line2);border-radius:6px;background:transparent;color:var(--muted);font-size:15px}
+.sbar{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}
+.slegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;font-size:12px;color:var(--soft)}
+.slegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.near{display:flex;flex-direction:column;gap:12px}
+.near button{all:unset;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center}
+.near .nt{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.near .achbar{grid-column:1/-1;height:6px;border:0;background:var(--line)}
+.near button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 </style>
 
 <div id="app" aria-live="polite">
@@ -885,8 +955,8 @@ function linkGames(a,b){const id=a.linkId||b.linkId||rid('l');linked(b).forEach(
 function segBarHTML(g){
   const all=linked(g);
   let h='<div class="segbar" role="tablist" aria-label="Plataformas">';
-  if(all.length>1)h+=all.map(x=>'<button role="tab" class="seg'+(x===g?' on':'')+'" data-act="seg" data-id="'+x.id+'" aria-selected="'+(x===g)+'"><img src="'+MEDAL[x.status]+'" alt=""><span>'+esc(platName(x))+'</span></button>').join('');
-  h+='<button class="seg add" data-act="platadd">+ Plataforma</button></div>';
+  if(all.length>1)h+=all.map(x=>{const px=prog(x);return '<button role="tab" class="seg'+(x===g?' on':'')+'" data-act="seg" data-id="'+x.id+'" aria-selected="'+(x===g)+'"><img src="'+MEDAL[x.status]+'" alt=""><span>'+esc(platName(x))+(px?' · '+esc(px.label.split(' · ')[0]):'')+'</span></button>'}).join('');
+  h+=(all.length>1?'<button class="seg add" data-act="platadd" aria-label="Adicionar plataforma">+</button>':'<button class="seg add" data-act="platadd">+ Plataforma</button>')+'</div>';
   return h;
 }
 function platOverlayHTML(){
@@ -982,16 +1052,17 @@ function continueHTML(){
   const gs=shelfList(Object.values(S.games).filter(g=>g.touchedAt&&g.status!=='plat').sort((a,b)=>b.touchedAt-a.touchedAt)).slice(0,8);
   if(!gs.length)return '';
   return '<div class="sec cont"><div class="sec-h"><h2>CONTINUAR JOGANDO</h2></div><div class="controw">'+gs.map(g=>{const pg=prog(g);
-    return '<button class="contcard" data-act="open" data-id="'+g.id+'">'+coverHTML(g)+'<span class="ct2">'+esc(shortTitle(g.title))+'</span>'+(pg?'<span class="achbar"><span style="width:'+pg.pct+'%"></span></span><span class="cp mono">'+pg.label+'</span>':'')+'</button>'}).join('')+'</div></div>';
+    const pl=g._segs?g._segs.map(platName).join(' · '):(g.platform||'');
+    return '<button class="contcard" data-act="open" data-id="'+g.id+'"><span class="ccov">'+coverHTML(g)+'</span><span class="cinfo"><span class="ct2">'+esc(shortTitle(g.title))+'</span>'+(pl?'<span class="cpl">'+esc(pl)+'</span>':'')+(pg?'<span class="achbar"><span style="width:'+pg.pct+'%"></span></span><span class="cp mono">'+pg.label+'</span>':'')+'</span></button>'}).join('')+'</div></div>';
 }
 function vEstante(){
   try{syncOther()}catch(e){}
   const c=counts(), s=S.settings, f=UI.filter;
-  let h='<div class="top">'+BRAND+'<button class="icon-btn" data-act="go" data-val="ajustes" aria-label="Personalizar">'+ICON.gear+'</button></div>';
+  let h='<div class="top">'+BRAND+'<div class="bar" style="gap:8px"><button class="icon-btn" data-act="go" data-val="ajustes" aria-label="Personalizar">'+ICON.gear+'</button><button class="icon-btn avatar-btn" data-act="go" data-val="perfil" aria-label="Perfil">'+esc((s.name||'?').slice(0,2))+'</button></div></div>';
   if(S.sample)h+='<div class="banner"><p>Esta estante começa com jogos LEGO de exemplo para você ver como fica. Edite à vontade ou limpe tudo para montar a sua.</p><button class="btn small accent-line" data-act="clearsample">Limpar exemplos</button></div>';
-  h+='<div class="hero" style="--hero:url('+ART.banner+')"><div class="me"><div class="avatar">'+esc((s.name||'?').slice(0,2))+'</div><div><div style="font-size:18px;font-weight:600">'+esc(s.name||'Sem nome')+'</div><div class="muted" style="font-size:13px">'+(s.bio?esc(s.bio):'Minha estante One Bit')+'</div></div></div>';
-  h+='<div class="stats"><div class="stat"><b class="hi">'+c.plat+'</b><span>Platinas</span></div><div class="stat"><b>'+c.cem+'</b><span>100%</span></div><div class="stat"><b>'+c.total+'</b><span>Jogos</span></div><div class="stat"><b>'+c.colls+'</b><span>Coleções</span></div></div></div>';
-  if(Object.values(S.games).some(hasCost))h+='<p class="muted" style="font-size:13px;margin-top:-10px">Valor da coleção: <b class="mono" style="color:var(--fg)">'+fmtMoney(spend(Object.values(S.games)))+'</b></p>';
+  const hr=new Date().getHours(),greet=hr>=5&&hr<12?'Bom dia':hr<18&&hr>=12?'Boa tarde':'Boa noite';
+  h+='<div class="hello"><span class="muted" style="font-size:13px">'+greet+(s.name?', '+esc(String(s.name).split(' ')[0]):'')+'</span><div class="hnums"><span><b class="mono hi">'+c.plat+'</b> platinas</span>'+(c.cem?'<span><b class="mono">'+c.cem+'</b> 100%</span>':'')+'<span><b class="mono">'+c.total+'</b> jogos</span><span><b class="mono">'+c.colls+'</b> coleções</span></div>'+
+    (Object.values(S.games).some(hasCost)?'<span class="muted" style="font-size:12px">Valor da coleção: <b class="mono" style="color:var(--fg)">'+fmtMoney(spend(Object.values(S.games)))+'</b></span>':'')+'</div>';
   if(!c.total){
     return h+'<div class="empty"><img class="art" src="'+ART.shelf+'" alt=""><h2 class="px" style="font-size:16px">ESTANTE VAZIA</h2><p>Adicione o primeiro jogo pela busca ou crie um do zero.</p><button class="btn primary" data-act="go" data-val="adicionar">ADICIONAR JOGO</button></div>';
   }
@@ -1121,47 +1192,75 @@ function vForm(){
   if(!UI.formNew)h+=UI.confirm==='delgame'?'<div class="btn-row"><button class="btn ghost" data-act="unconfirm">Manter</button><button class="btn danger" data-act="delgame">Remover mesmo</button></div>':'<button class="btn danger" data-act="askdelgame">Remover da estante</button>';
   return h;
 }
+function jSumHTML(g){
+  const p=prog(g),hv=parseFloat(String(g.hours||'').replace(',','.'));
+  const card=(lab,val,extra,id)=>'<div class="jcard"'+(id?' id="'+id+'"':'')+'><span class="jl">'+lab+'</span><span class="jv mono">'+val+'</span>'+(extra||'')+'</div>';
+  return '<div class="jsum">'+
+    card('Conquistas',p?p.pct+'%':(g.noAchievements?'—':'0%'),p?'<div class="achbar"><span style="width:'+p.pct+'%"></span></div><span class="jl mono">'+esc(p.label.split(' · ')[0])+'</span>':'<span class="jl">'+(g.noAchievements?'sem conquistas':'nenhuma marcada')+'</span>','jsum-ach')+
+    card('Tempo de jogo',hv?(Math.round(hv*10)/10).toString().replace('.',',')+' h':'—','<span class="jl">'+(hv?'registrado':'sem registro')+'</span>')+
+    card('Valor pago',hasCost(g)?fmtMoney(gameCost(g)):'—','<span class="jl">'+esc(g.platform||'')+'</span>')+'</div>';
+}
 function vJogo(){
   const g=S.games[UI.gameId]; if(!g){UI.view='estante';return vEstante()}
-  const src=coverSrc(g)||coverSrc(shelfView(g)), p=prog(g), cs=collsOf(g.id), endLabel=g.status==='plat'?'Platinei em':g.status==='cem'?'Completei em':'Terminei em';
-  let h=topBar('','back','<button class="btn small accent-line" data-act="edit">'+ICON.edit+' Editar</button>');
-  h+='<div class="c3d-wrap idle" id="c3d"><div class="c3d st-'+g.status+'" style="--c:'+esc(g.color)+'">'+(src?'<img src="'+esc(src)+'" alt="Capa de '+esc(g.title)+'">':'<i class="p1"></i><i class="p2"></i><i class="p3"></i><span class="ct">'+esc(g.title)+'</span>')+'<img class="medal" src="'+MEDAL[g.status]+'" alt="">'+(S.settings.shine?'<span class="shine"></span>':'')+'</div></div>';
+  const src=coverSrc(g)||coverSrc(shelfView(g)), cs=collsOf(g.id), endLabel=g.status==='plat'?'Platinei em':g.status==='cem'?'Completei em':'Terminei em';
+  const tabs=[['resumo','Resumo']];
+  tabs.push(['conq','Conquistas']);
+  if(progId(g))tabs.push(['col','Coleção']);
+  if((g.dlcs||[]).length)tabs.push(['dlc','DLCs']);
+  const tab=tabs.some(t=>t[0]===UI.jtab)?UI.jtab:(g.trophies.length?'conq':'resumo');
+  let h='<div class="ghero">'+(src?'<img class="gbg" src="'+esc(src)+'" alt="">':'')+
+    '<div class="gtop"><button class="icon-btn glass" data-act="back" aria-label="Voltar">'+ICON.back+'</button><button class="btn small glass" data-act="edit">'+ICON.edit+' Editar</button></div>'+
+    '<div class="ghead"><div class="gcov cover st-'+g.status+'" style="--c:'+esc(g.color)+'">'+(src?'<img src="'+esc(src)+'" alt="Capa de '+esc(g.title)+'">':'<i class="p1"></i><i class="p2"></i><i class="p3"></i><span class="ct">'+esc(g.title)+'</span>')+'<img class="medal" src="'+MEDAL[g.status]+'" alt=""></div>'+
+    '<div class="ginfo"><span class="badge-st'+(g.status==='plat'?' plat':'')+'"><img src="'+MEDAL[g.status]+'" alt="">'+STATUS[g.status].toUpperCase()+'</span><h1 class="px">'+esc(g.title)+'</h1><p>'+esc([g.developer,g.publisher&&g.publisher!==g.developer?g.publisher:'',g.year].filter(Boolean).join(' · '))+'</p></div></div></div>';
   h+=segBarHTML(g);
-  h+='<div class="sec" style="gap:8px"><span class="badge-st'+(g.status==='plat'?' plat':'')+'"><img src="'+MEDAL[g.status]+'" alt="">'+STATUS[g.status].toUpperCase()+'</span><h1 class="px" style="font-size:22px;line-height:1.2">'+esc(g.title)+'</h1><p class="muted" style="font-size:13px">'+esc([g.developer,g.year].filter(Boolean).join(' · '))+'</p></div>';
-  if(p)h+='<div class="prog"><div class="sec-h" style="font-size:13px"><span style="color:var(--soft)">Troféus</span><span class="mono">'+p.label+'</span></div><div class="meter"><span style="width:'+p.pct+'%"></span></div></div>';
+  h+=jSumHTML(g);
+  h+='<div class="jtabs" role="tablist" aria-label="Seções do jogo">'+tabs.map(t=>'<button role="tab" data-act="jtab" data-val="'+t[0]+'" aria-selected="'+(t[0]===tab)+'">'+t[1].toUpperCase()+'</button>').join('')+'</div>';
+  if(tab==='resumo'){
   const row=(k,v,mono)=>'<div><dt>'+k+'</dt><dd'+(mono?' class="mono"':'')+'>'+(v||'<span class="muted">—</span>')+'</dd></div>';
-  h+='<div class="sec"><h2 class="px" style="font-size:14px">FICHA</h2><dl class="ficha" style="margin:0">'+
-    row('Desenvolvedora',esc(g.developer))+row('Publicadora',esc(g.publisher))+row('Lançamento',esc(fmtDate(g.released)||g.year),true)+row('Franquia',esc(g.franchise))+
-    row('Joguei no',esc(g.platform)+(linked(g).length>1?' <button class="btn small ghost" data-act="platunlink" style="display:inline-flex;margin-left:8px;min-height:30px">Separar</button>':''))+row('Minha cópia',g.media==='fisica'?'Física':g.media==='digital'?'Digital':'')+
-    row('Comecei em',esc(fmtDate(g.started)),true)+row(endLabel,esc(fmtDate(g.finished)),true)+row('Tempo de jogo',g.hours?esc(g.hours)+' h':'',true)+
-    row('Dificuldade',g.difficulty?'<span class="dots">'+Array.from({length:10},(_,i)=>'<i'+(i<g.difficulty?' class="on"':'')+'></i>').join('')+'</span>'+g.difficulty+'/10':'',true)+
-    row('Minha nota',g.rating==null?'':'<span style="color:var(--accent)">'+g.rating+'/10</span>',true)+'</dl></div>';
-  h+=progSectionHTML(g);
-  h+=costSectionHTML(g);
+    h+='<div class="sec"><h2 class="px" style="font-size:14px">FICHA</h2><dl class="ficha" style="margin:0">'+
+      row('Desenvolvedora',esc(g.developer))+row('Publicadora',esc(g.publisher))+row('Lançamento',esc(fmtDate(g.released)||g.year),true)+row('Franquia',esc(g.franchise))+
+      row('Joguei no',esc(g.platform)+(linked(g).length>1?' <button class="btn small ghost" data-act="platunlink" style="display:inline-flex;margin-left:8px;min-height:30px">Separar</button>':''))+row('Minha cópia',g.media==='fisica'?'Física':g.media==='digital'?'Digital':'')+
+      row('Comecei em',esc(fmtDate(g.started)),true)+row(endLabel,esc(fmtDate(g.finished)),true)+row('Tempo de jogo',g.hours?esc(g.hours)+' h':'',true)+
+      row('Dificuldade',g.difficulty?'<span class="dots">'+Array.from({length:10},(_,i)=>'<i'+(i<g.difficulty?' class="on"':'')+'></i>').join('')+'</span>'+g.difficulty+'/10':'',true)+
+      row('Minha nota',g.rating==null?'':'<span style="color:var(--accent)">'+g.rating+'/10</span>',true)+'</dl></div>';
+    h+=costSectionHTML(g);
   h+='<div class="sec"><h2 class="px" style="font-size:14px">NAS MINHAS COLEÇÕES</h2><div class="chips">'+cs.map(c=>'<button class="chip" data-act="editcoll" data-id="'+c.id+'" style="border-color:var(--accent);color:var(--accent)">'+esc(c.name)+'</button>').join('')+'<button class="chip" data-act="edit" style="border-style:dashed">+ Escolher coleções</button></div></div>';
-  if(g.story)h+='<div class="sec"><h2 class="px" style="font-size:14px">MINHA HISTÓRIA</h2><p class="story">'+esc(g.story)+'</p></div>';
-  if(g.prints.length)h+='<div class="sec"><div class="sec-h"><h2>MEUS PRINTS</h2><span class="muted" style="font-size:12px">'+g.prints.length+'</span></div><div class="prints">'+g.prints.map((id,i)=>'<div class="shot"><img src="'+esc(mediaSrc(id))+'" alt="Print '+(i+1)+' de '+esc(g.title)+'" loading="lazy"></div>').join('')+'</div></div>';
-  if(g.trophies.length){
-    const op=UI.achOpen===g.id, dn=g.trophies.filter(t=>t.done).length, pc=Math.round(dn*100/g.trophies.length);
-    h+='<div class="sec"><div class="sec-h"><h2>CONQUISTAS</h2><span class="muted mono" style="font-size:12px">'+dn+'/'+g.trophies.length+' · '+pc+'%</span></div><div class="achbar"><span style="width:'+pc+'%"></span></div><button class="btn small ghost achtog" data-act="achtog" aria-expanded="'+op+'">'+(op?'Esconder conquistas ▴':'Ver as '+g.trophies.length+' conquistas ▾')+'</button>'+(op?trBarHTML(g)+(baseOf(g)&&baseOf(g).trophySource?'<p class="muted" style="font-size:12px">'+esc(baseOf(g).trophySource)+'</p>':'')+achToolsHTML(g)+
-      ((+g.trophyTotal>g.trophies.length)?'<p class="muted" style="font-size:12px;text-align:center">+ '+(g.trophyTotal-g.trophies.length)+' troféus sem nome cadastrado · adicione em Editar</p>':''):'')+'</div>';
-  }else if(g.noAchievements){
-    h+='<div class="sec"><h2 class="px" style="font-size:14px">CONQUISTAS</h2><div class="empty"><p>Este jogo não possui conquistas.</p></div></div>';
-  }else{
-    h+='<div class="sec"><h2 class="px" style="font-size:14px">CONQUISTAS</h2><div class="empty"><p>Nenhuma conquista cadastrada. Adicione os troféus do jogo ou crie metas pessoais.</p><button class="btn small accent-line" data-act="edit">Adicionar conquistas</button></div></div>';
+    if(g.story)h+='<div class="sec"><h2 class="px" style="font-size:14px">MINHA HISTÓRIA</h2><p class="story">'+esc(g.story)+'</p></div>';
+    if(g.prints.length)h+='<div class="sec"><div class="sec-h"><h2>MEUS PRINTS</h2><span class="muted" style="font-size:12px">'+g.prints.length+'</span></div><div class="prints">'+g.prints.map((id,i)=>'<div class="shot"><img src="'+esc(mediaSrc(id))+'" alt="Print '+(i+1)+' de '+esc(g.title)+'" loading="lazy"></div>').join('')+'</div></div>';
+    h+='<button class="btn primary" data-act="share">'+ICON.share+' GERAR CARD PARA COMPARTILHAR</button>';
   }
-  h+=dlcSectionHTML(g);
-  h+='<button class="btn primary" data-act="share">'+ICON.share+' GERAR CARD PARA COMPARTILHAR</button>';
+  if(tab==='conq'){
+  if(g.trophies.length){
+      h+='<div class="sec">'+(true?trBarHTML(g)+(baseOf(g)&&baseOf(g).trophySource?'<p class="muted" style="font-size:12px">'+esc(baseOf(g).trophySource)+'</p>':'')+achToolsHTML(g)+
+        ((+g.trophyTotal>g.trophies.length)?'<p class="muted" style="font-size:12px;text-align:center">+ '+(g.trophyTotal-g.trophies.length)+' troféus sem nome cadastrado · adicione em Editar</p>':''):'')+'</div>';
+    }else if(g.noAchievements){
+      h+='<div class="sec"><h2 class="px" style="font-size:14px">CONQUISTAS</h2><div class="empty"><p>Este jogo não possui conquistas.</p></div></div>';
+    }else{
+      h+='<div class="sec"><h2 class="px" style="font-size:14px">CONQUISTAS</h2><div class="empty"><p>Nenhuma conquista cadastrada. Adicione os troféus do jogo ou crie metas pessoais.</p><button class="btn small accent-line" data-act="edit">Adicionar conquistas</button></div></div>';
+    }
+  }
+  if(tab==='col')h+=progSectionHTML(g);
+  if(tab==='dlc')h+=dlcSectionHTML(g);
   return h;
 }
 function vPerfil(){
   const s=S.settings, c=counts(), gs=Object.values(S.games);
   let h='<div class="top"><h1 class="h-title">PERFIL</h1><button class="icon-btn" data-act="go" data-val="ajustes" aria-label="Personalizar">'+ICON.gear+'</button></div>';
-  h+='<div class="hero center" style="--hero:url('+ART.banner+')"><div class="profile-head"><div class="avatar big">'+esc((s.name||'?').slice(0,2))+'</div><div><div style="font-size:20px;font-weight:600">'+esc(s.name||'Sem nome')+'</div>'+(s.handle?'<div class="mono muted" style="font-size:13px">@'+esc(s.handle)+'</div>':'')+'</div>'+(s.bio?'<p style="color:var(--soft);font-size:14px;max-width:36ch">'+esc(s.bio)+'</p>':'')+'</div></div>';
-  h+='<div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="stat"><b class="hi">'+c.plat+'</b><span>Platinas</span></div><div class="stat"><b>'+c.cem+'</b><span>100%</span></div><div class="stat"><b>'+c.total+'</b><span>Jogos</span></div></div>';
+  const val=gs.some(hasCost)?fmtMoney(Math.round(spend(gs))).replace(/[.,]00$/,''):'—';
+  h+='<div class="pcard"><div class="me"><div class="avatar big">'+esc((s.name||'?').slice(0,2))+'</div><div><div style="font-size:19px;font-weight:600">'+esc(s.name||'Sem nome')+'</div>'+(s.handle?'<div class="mono" style="font-size:13px;color:var(--soft)">@'+esc(s.handle)+'</div>':'')+'</div></div>'+(s.bio?'<p style="color:var(--soft);font-size:14px;max-width:40ch">'+esc(s.bio)+'</p>':'')+
+    '<div class="pnums"><div><b class="mono hi">'+c.plat+'</b><span>Platinas</span></div><div><b class="mono">'+c.total+'</b><span>Jogos</span></div><div><b class="mono">'+c.colls+'</b><span>Coleções</span></div><div><b class="mono" style="font-size:15px;line-height:26px">'+val+'</b><span>Valor</span></div></div></div>';
+  const plats=gs.filter(g=>g.status==='plat'||g.status==='cem').sort((a,b)=>String(b.finished||'').localeCompare(String(a.finished||''))||((b.rating??-1)-(a.rating??-1)));
+  if(plats.length){const shown=plats.slice(0,plats.length>4?3:4);
+    h+='<div class="sec"><div class="sec-h"><h2>VITRINE DE PLATINAS</h2><span class="muted" style="font-size:12px">'+plats.length+'</span></div><div class="pvit">'+shown.map(g=>'<button class="slot" data-act="open" data-id="'+g.id+'" aria-label="'+esc(g.title)+'">'+coverHTML(g)+'</button>').join('')+(plats.length>4?'<button class="pmore mono" data-act="filter" data-val="plat" aria-label="Ver todas as platinas">+'+(plats.length-3)+'</button>':'')+'</div></div>'}
+  const pr=gs.filter(g=>isPrimary(g)),nP=pr.filter(g=>linked(g).some(x=>x.status==='plat'||x.status==='cem')).length,
+    nNo=pr.filter(g=>!linked(g).some(x=>x.trophies.length)&&!(nP&&linked(g).some(x=>x.status==='plat'||x.status==='cem'))).length,
+    nZero=pr.filter(g=>!linked(g).some(x=>x.status==='plat'||x.status==='cem')&&linked(g).some(x=>x.trophies.length)&&!linked(g).some(x=>x.trophies.some(t=>t.done))).length,
+    nGo=Math.max(0,pr.length-nP-nNo-nZero);
+  if(pr.length){const segs=[[nP,'var(--accent)','platinados'],[nGo,'var(--gold)','em andamento'],[nZero,'#5B5C66','ainda sem conquista'],[nNo,'var(--line)','sem conquistas no jogo']];
+    h+='<div class="sec"><h2 class="px" style="font-size:14px">SUA ESTANTE</h2><div class="sbar">'+segs.filter(x=>x[0]).map(x=>'<span style="flex:'+x[0]+';background:'+x[1]+'"></span>').join('')+'</div><div class="slegend">'+segs.map(x=>'<span><i style="background:'+x[1]+'"></i>'+x[0]+' '+x[2]+'</span>').join('')+'</div></div>'}
+  const near=gs.filter(g=>g.trophies.length&&g.status!=='plat'&&g.status!=='cem'&&gLeft(g)>0&&gLeft(g)<g.trophies.length).sort((a,b)=>gPct(b)-gPct(a)||gLeft(a)-gLeft(b)).slice(0,3);
+  if(near.length)h+='<div class="sec"><h2 class="px" style="font-size:14px">MAIS PERTO DE PLATINAR</h2><div class="near">'+near.map(g=>{const n=gLeft(g);return '<button data-act="open" data-id="'+g.id+'"><span class="nt">'+esc(shortTitle(g.title))+(linked(g).length>1?' <span class="muted">· '+esc(platName(g))+'</span>':'')+'</span><span class="mono muted">'+(n===1?'falta 1':'faltam '+n)+'</span><span class="achbar"><span style="width:'+Math.round(gPct(g)*100)+'%"></span></span></button>'}).join('')+'</div></div>';
   h+=spendSectionHTML();
-  const vit=gs.filter(g=>g.status==='plat'||g.status==='cem').sort((a,b)=>((b.rating??-1)-(a.rating??-1))||((b.status==='plat')-(a.status==='plat'))).slice(0,3);
-  if(vit.length)h+='<div class="sec"><div class="sec-h"><h2>VITRINE</h2><span class="muted" style="font-size:12px">Suas melhores notas</span></div><div class="vitrine">'+vit.map(g=>'<button class="slot" data-act="open" data-id="'+g.id+'">'+coverHTML(g)+'<span>'+esc(shortTitle(g.title))+'</span></button>').join('')+'</div></div>';
   const fr={}; gs.forEach(g=>{const k=g.franchise||'Outros';fr[k]=fr[k]||{p:0,c:0};if(g.status==='plat')fr[k].p++;if(g.status==='cem')fr[k].c++});
   const keys=Object.keys(fr).filter(k=>fr[k].p+fr[k].c>0).sort((a,b)=>(fr[b].p+fr[b].c)-(fr[a].p+fr[a].c));
   const max=Math.max(1,...keys.map(k=>fr[k].p+fr[k].c));
@@ -1838,6 +1937,7 @@ const A={
   fdlcvia:(el)=>{const d=UI.form.dlcs[+el.dataset.i];d.via=d.via?'':(passesOf(UI.form)[0]||{}).id||'';fixVia(UI.form);render()},
   fpassall:(el)=>{const p=UI.form.dlcs[+el.dataset.i];let n=0;UI.form.dlcs.forEach(d=>{if(d!==p&&d.kind!=='passe'&&!d.included){d.via=p.id;d.owned=true;n++}});toast(n+(n===1?' DLC marcada':' DLCs marcadas')+' como vindas do pacote.');render()},
   fdlcinc:(el)=>{const d=UI.form.dlcs[+el.dataset.i];d.included=!d.included;if(d.included){d.owned=true;d.via=''}fixVia(UI.form);render()},
+  jtab:(el)=>{UI.jtab=el.dataset.val;render();window.scrollTo(0,0)},
   achtog:()=>{UI.achOpen=UI.achOpen===UI.gameId?null:UI.gameId;UI.achQ='';UI.achJust={};render()},
   tdone:(el)=>{const g=S.games[UI.gameId];if(!g)return;const i=+el.dataset.i,t=g.trophies[i];if(!t)return;
     t.done=!t.done;(UI.achJust=UI.achJust||{})[i]=true;
@@ -1850,7 +1950,7 @@ const A={
       el.setAttribute('aria-pressed',String(!!t.done));const ck=el.querySelector('.check');if(ck){ck.setAttribute('aria-pressed',String(!!t.done));ck.innerHTML=t.done?ICON.check:''}
       const ic=el.querySelector('.troph-ico');if(ic)ic.className='troph-ico '+(t.done?effType(t,g.platform):'');
       const m=document.querySelector('[data-act="achmiss"]');if(m)m.textContent='Só as que faltam · '+g.trophies.filter(x=>!x.done).length;
-      const pr=document.querySelector('.prog');if(pr){const p=prog(g);if(p){const lb=pr.querySelector('.mono'),bar=pr.querySelector('.meter span');if(lb)lb.textContent=p.label;if(bar)bar.style.width=p.pct+'%'}}
+      const pr=document.getElementById('jsum-ach');if(pr){const p=prog(g);if(p){const v=pr.querySelector('.jv'),b=pr.querySelector('.achbar span'),l=pr.querySelector('.jl.mono');if(v)v.textContent=p.pct+'%';if(b)b.style.width=p.pct+'%';if(l)l.textContent=p.label.split(' · ')[0]}}
       window.scrollTo(0,y)}else render()},
   achmiss:()=>{UI.achMissing=!UI.achMissing;UI.achJust={};const g=S.games[UI.gameId],l=document.getElementById('achlist');if(g&&l){l.innerHTML=trophyGroupsHTML(g);const m=document.querySelector('[data-act="achmiss"]');if(m)m.setAttribute('aria-pressed',String(UI.achMissing))}else render()},
 
