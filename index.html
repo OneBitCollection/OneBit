@@ -1,4 +1,5 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.segbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-18px 0 0;padding-bottom:2px}.segbar::-webkit-scrollbar{display:none}.seg{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--soft);font:400 11px/1 var(--f-pixel);letter-spacing:.5px}.seg img{width:18px;height:18px;image-rendering:pixelated}.seg.on{border-color:var(--accent);color:var(--fg);background:rgba(var(--accent-rgb),.12);box-shadow:inset 0 -2px 0 var(--accent)}.seg.add{border-style:dashed;color:var(--muted);font:500 13px/1 var(--f-body)}.segtag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);z-index:3;white-space:nowrap;font:400 8px/1.5 var(--f-pixel);padding:0 5px;background:var(--accent);color:var(--ink);pointer-events:none}
+.titem{width:100%;text-align:left;color:inherit;cursor:pointer}.titem:active{transform:scale(.99)}.achtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px}.search.slim{min-height:44px;flex:1 1 200px;border-width:1px;box-shadow:none}.cont .controw{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:10px 2px 6px;margin:0 -2px}.controw::-webkit-scrollbar{display:none}.contcard{flex:0 0 auto;width:92px;display:flex;flex-direction:column;gap:6px;background:none;border:0;padding:0;color:var(--soft);text-align:left;--cw:92px}.contcard .ct2{font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.contcard .achbar{height:4px}.contcard .cp{font-size:11px;color:var(--muted)}
 </style>
 <title>One Bit</title>
 <meta name="theme-color" content="#1A1B1F">
@@ -560,6 +561,7 @@ function syncOther(){
 }
 function save(){
   try{syncOther()}catch(e){}
+  try{if((UI.view==='jogo'||UI.view==='form')&&UI.gameId&&S.games[UI.gameId])S.games[UI.gameId].touchedAt=Date.now()}catch(e){}
   clearTimeout(store.timer);
   store.timer=setTimeout(saveNow,450);
 }
@@ -673,7 +675,7 @@ function prog(g){
   return {pct,label:done+'/'+total+' · '+pct+'%'};
 }
 function dlcById(g,id){return (g.dlcs||[]).find(d=>d.id===id)||null}
-function trophyItemHTML(t,g){const tr=trFor(g,t);return '<div class="item"><span class="troph-ico '+(t.done?effType(t,g.platform):'')+'">'+ICON.trophy+'</span><span class="grow"><span class="t">'+esc(tr?tr.n:(t.name||'Sem nome'))+'</span><span class="s">'+TTYPES[effType(t,g.platform)]+((tr?tr.d:t.desc)?' · '+esc(tr?tr.d:t.desc):'')+'</span>'+(tr&&tr.n!==t.name?'<span class="s orig">Original: '+esc(t.name)+'</span>':'')+'</span><span class="check" aria-pressed="'+t.done+'">'+(t.done?ICON.check:'')+'</span></div>'}
+function trophyItemHTML(t,g){const tr=trFor(g,t),i=g.trophies.indexOf(t);return '<button class="item titem" data-act="tdone" data-i="'+i+'" aria-pressed="'+!!t.done+'"><span class="troph-ico '+(t.done?effType(t,g.platform):'')+'">'+ICON.trophy+'</span><span class="grow"><span class="t">'+esc(tr?tr.n:(t.name||'Sem nome'))+'</span><span class="s">'+TTYPES[effType(t,g.platform)]+((tr?tr.d:t.desc)?' · '+esc(tr?tr.d:t.desc):'')+'</span>'+(tr&&tr.n!==t.name?'<span class="s orig">Original: '+esc(t.name)+'</span>':'')+'</span><span class="check" aria-pressed="'+!!t.done+'">'+(t.done?ICON.check:'')+'</span></button>'}
 
 /* ---------- tradução das conquistas na hora ---------- */
 const LANGS={'pt-BR':'Português','en':'English','es':'Español'};
@@ -747,13 +749,26 @@ async function translateTrophies(g,useClaude){
   }catch(e){const c=e&&e.code;toast(c==='not_granted'?'Permita o uso do Claude para traduzir.':c==='rate_limited'?'Muitas traduções seguidas. Tente de novo em instantes.':'Não consegui traduzir agora. Tente de novo.')}
   UI.trBusy=null;render();
 }
+function achVisible(g,t){
+  if(UI.achMissing&&t.done&&!(UI.achJust||{})[g.trophies.indexOf(t)])return false;
+  const q=normTxt(UI.achQ).trim();
+  if(!q)return true;const tr=trFor(g,t);
+  return [t.name,t.desc,tr&&tr.n,tr&&tr.d].some(x=>normTxt(x).includes(q));
+}
+function achToolsHTML(g){
+  const left=g.trophies.filter(t=>!t.done).length;
+  return '<div class="achtools"><label class="search slim" for="achq">'+ICON.search+'<input id="achq" type="search" placeholder="Buscar conquista" value="'+esc(UI.achQ||'')+'" autocomplete="off"></label>'+
+    '<button class="chip" data-act="achmiss" aria-pressed="'+!!UI.achMissing+'">Só as que faltam · '+left+'</button></div><div id="achlist">'+trophyGroupsHTML(g)+'</div>';
+}
 function trophyGroupsHTML(g){
-  const base=g.trophies.filter(t=>!t.dlc||!dlcById(g,t.dlc));
+  const vis=t=>achVisible(g,t);
+  const base=g.trophies.filter(t=>(!t.dlc||!dlcById(g,t.dlc))&&vis(t));
   const hasD=(g.dlcs||[]).some(d=>g.trophies.some(t=>t.dlc===d.id));
   let h='';
   if(base.length)h+=(hasD?'<div class="grp-h" style="cursor:default"><span>Jogo base</span><span class="mono">'+base.filter(t=>t.done).length+'/'+base.length+'</span></div>':'')+'<div class="list">'+base.map(t=>trophyItemHTML(t,g)).join('')+'</div>';
-  (g.dlcs||[]).forEach(d=>{const ts=g.trophies.filter(t=>t.dlc===d.id);if(!ts.length)return;
-    h+='<details class="grp'+(d.owned?'':' off')+'"><summary class="grp-h"><span>DLC · '+esc(d.name)+(d.owned?'':' · você não tem')+'</span><span class="mono" style="margin-left:auto">'+ts.filter(t=>t.done).length+'/'+ts.length+'</span></summary><div class="list">'+ts.map(t=>trophyItemHTML(t,g)).join('')+'</div></details>'});
+  (g.dlcs||[]).forEach(d=>{const ts=g.trophies.filter(t=>t.dlc===d.id&&vis(t));if(!ts.length)return;
+    h+='<details class="grp'+(d.owned?'':' off')+'"'+(UI.achQ||UI.achMissing?' open':'')+'><summary class="grp-h"><span>DLC · '+esc(d.name)+(d.owned?'':' · você não tem')+'</span><span class="mono" style="margin-left:auto">'+ts.filter(t=>t.done).length+'/'+ts.length+'</span></summary><div class="list">'+ts.map(t=>trophyItemHTML(t,g)).join('')+'</div></details>'});
+  if(!h)h='<p class="muted" style="font-size:14px;text-align:center;padding:12px 0">'+(UI.achQ?'Nenhuma conquista com esse nome.':'Você já pegou todas.')+'</p>';
   return h;
 }
 
@@ -937,6 +952,24 @@ function filterPanelHTML(){
   if(S.collections.length)h+='<h3>COLEÇÃO</h3><div class="chips">'+chip('fcoll','','Todas',!UI.coll)+S.collections.map(c=>chip('fcoll',c.id,esc(c.name),UI.coll===c.id)).join('')+'</div>';
   return h+'</div>';
 }
+
+function normTxt(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+function shelfSearchHTML(){
+  return '<label class="search" for="shelfq">'+ICON.search+'<input id="shelfq" type="search" placeholder="Buscar na sua estante" value="'+esc(UI.shelfQ||'')+'" autocomplete="off" enterkeyhint="search"></label><div id="shelfres">'+shelfResultsHTML()+'</div>';
+}
+function shelfResultsHTML(){
+  const q=normTxt(UI.shelfQ).trim();if(!q)return '';
+  const gs=shelfList(Object.values(S.games).filter(g=>normTxt(g.title).includes(q)||normTxt(g.franchise).includes(q))).sort((a,b)=>{const ai=normTxt(a.title).indexOf(q),bi=normTxt(b.title).indexOf(q);return (ai===0?0:1)-(bi===0?0:1)||String(a.title).localeCompare(String(b.title),'pt-BR')});
+  if(!gs.length)return '<p class="muted" style="font-size:14px;padding:6px 2px">Nenhum jogo com "'+esc(UI.shelfQ)+'" na estante.</p>';
+  return '<div class="list" style="margin-top:8px">'+gs.slice(0,30).map(g=>{const pg=prog(g),segs=g._segs?g._segs.map(platName).join(' · '):(g.platform||'');
+    return '<button class="item" style="text-align:left;color:inherit" data-act="open" data-id="'+g.id+'"><span class="thumb">'+coverHTML(g)+'</span><span class="grow"><span class="t">'+esc(g.title)+'</span><span class="s">'+esc([STATUS[g.status],segs,pg&&pg.label].filter(Boolean).join(' · '))+'</span></span></button>'}).join('')+'</div>'+(gs.length>30?'<p class="muted" style="font-size:12px;margin-top:6px">Mostrando 30 de '+gs.length+'. Digite mais letras.</p>':'');
+}
+function continueHTML(){
+  const gs=shelfList(Object.values(S.games).filter(g=>g.touchedAt&&g.status!=='plat').sort((a,b)=>b.touchedAt-a.touchedAt)).slice(0,8);
+  if(!gs.length)return '';
+  return '<div class="sec cont"><div class="sec-h"><h2>CONTINUAR JOGANDO</h2></div><div class="controw">'+gs.map(g=>{const pg=prog(g);
+    return '<button class="contcard" data-act="open" data-id="'+g.id+'">'+coverHTML(g)+'<span class="ct2">'+esc(shortTitle(g.title))+'</span>'+(pg?'<span class="achbar"><span style="width:'+pg.pct+'%"></span></span><span class="cp mono">'+pg.label+'</span>':'')+'</button>'}).join('')+'</div></div>';
+}
 function vEstante(){
   try{syncOther()}catch(e){}
   const c=counts(), s=S.settings, f=UI.filter;
@@ -948,6 +981,8 @@ function vEstante(){
   if(!c.total){
     return h+'<div class="empty"><img class="art" src="'+ART.shelf+'" alt=""><h2 class="px" style="font-size:16px">ESTANTE VAZIA</h2><p>Adicione o primeiro jogo pela busca ou crie um do zero.</p><button class="btn primary" data-act="go" data-val="adicionar">ADICIONAR JOGO</button></div>';
   }
+  h+=shelfSearchHTML();
+  if(!UI.shelfQ)h+=continueHTML();
   h+='<div class="chips" role="group" aria-label="Filtrar">'+[['all','Tudo'],['plat','Platinas'],['cem','100%'],['jogando','Jogando']].map(x=>'<button class="chip" data-act="filter" data-val="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
   h+=filterPanelHTML();
   if(!fActive())h+='<button class="btn accent-line" data-act="org">✦ Organizar estante automaticamente</button>';
@@ -1094,7 +1129,7 @@ function vJogo(){
   if(g.prints.length)h+='<div class="sec"><div class="sec-h"><h2>MEUS PRINTS</h2><span class="muted" style="font-size:12px">'+g.prints.length+'</span></div><div class="prints">'+g.prints.map((id,i)=>'<div class="shot"><img src="'+esc(mediaSrc(id))+'" alt="Print '+(i+1)+' de '+esc(g.title)+'" loading="lazy"></div>').join('')+'</div></div>';
   if(g.trophies.length){
     const op=UI.achOpen===g.id, dn=g.trophies.filter(t=>t.done).length, pc=Math.round(dn*100/g.trophies.length);
-    h+='<div class="sec"><div class="sec-h"><h2>CONQUISTAS</h2><span class="muted mono" style="font-size:12px">'+dn+'/'+g.trophies.length+' · '+pc+'%</span></div><div class="achbar"><span style="width:'+pc+'%"></span></div><button class="btn small ghost achtog" data-act="achtog" aria-expanded="'+op+'">'+(op?'Esconder conquistas ▴':'Ver as '+g.trophies.length+' conquistas ▾')+'</button>'+(op?trBarHTML(g)+(baseOf(g)&&baseOf(g).trophySource?'<p class="muted" style="font-size:12px">'+esc(baseOf(g).trophySource)+'</p>':'')+trophyGroupsHTML(g)+
+    h+='<div class="sec"><div class="sec-h"><h2>CONQUISTAS</h2><span class="muted mono" style="font-size:12px">'+dn+'/'+g.trophies.length+' · '+pc+'%</span></div><div class="achbar"><span style="width:'+pc+'%"></span></div><button class="btn small ghost achtog" data-act="achtog" aria-expanded="'+op+'">'+(op?'Esconder conquistas ▴':'Ver as '+g.trophies.length+' conquistas ▾')+'</button>'+(op?trBarHTML(g)+(baseOf(g)&&baseOf(g).trophySource?'<p class="muted" style="font-size:12px">'+esc(baseOf(g).trophySource)+'</p>':'')+achToolsHTML(g)+
       ((+g.trophyTotal>g.trophies.length)?'<p class="muted" style="font-size:12px;text-align:center">+ '+(g.trophyTotal-g.trophies.length)+' troféus sem nome cadastrado · adicione em Editar</p>':''):'')+'</div>';
   }else if(g.noAchievements){
     h+='<div class="sec"><h2 class="px" style="font-size:14px">CONQUISTAS</h2><div class="empty"><p>Este jogo não possui conquistas.</p></div></div>';
@@ -1717,7 +1752,7 @@ window.__obBack=function(){ // botão voltar do Android
   if(UI.view&&UI.view!=='estante'){go('estante');return true}
   return false};
 function go(view){UI.view=view;UI.gameId=null;UI.form=null;UI.confirm=null;UI.collEdit=view==='colecoes'?UI.collEdit:null;render();window.scrollTo(0,0)}
-function openGame(id){if(UI.view!=='jogo'&&UI.view!=='form')UI.prev=UI.view;UI.view='jogo';UI.gameId=id;UI.confirm=null;render();window.scrollTo(0,0)}
+function openGame(id){UI.achQ='';UI.achJust={};UI.shelfQ='';if(UI.view!=='jogo'&&UI.view!=='form')UI.prev=UI.view;UI.view='jogo';UI.gameId=id;UI.confirm=null;render();window.scrollTo(0,0)}
 function startForm(g,isNew){UI.formAchOpen=false;if(UI.view!=='jogo'&&UI.view!=='form')UI.prev=UI.view;UI.form=clone(g);UI.form._colls=S.collections.filter(c=>c.gameIds.includes(g.id)).map(c=>c.id);UI.formNew=isNew;UI.view='form';UI.confirm=null;render();window.scrollTo(0,0)}
 const A={
   go:(el)=>go(el.dataset.val),
@@ -1789,7 +1824,22 @@ const A={
   fdlcvia:(el)=>{const d=UI.form.dlcs[+el.dataset.i];d.via=d.via?'':(passesOf(UI.form)[0]||{}).id||'';fixVia(UI.form);render()},
   fpassall:(el)=>{const p=UI.form.dlcs[+el.dataset.i];let n=0;UI.form.dlcs.forEach(d=>{if(d!==p&&d.kind!=='passe'&&!d.included){d.via=p.id;d.owned=true;n++}});toast(n+(n===1?' DLC marcada':' DLCs marcadas')+' como vindas do pacote.');render()},
   fdlcinc:(el)=>{const d=UI.form.dlcs[+el.dataset.i];d.included=!d.included;if(d.included){d.owned=true;d.via=''}fixVia(UI.form);render()},
-  achtog:()=>{UI.achOpen=UI.achOpen===UI.gameId?null:UI.gameId;render()},
+  achtog:()=>{UI.achOpen=UI.achOpen===UI.gameId?null:UI.gameId;UI.achQ='';UI.achJust={};render()},
+  tdone:(el)=>{const g=S.games[UI.gameId];if(!g)return;const i=+el.dataset.i,t=g.trophies[i];if(!t)return;
+    t.done=!t.done;(UI.achJust=UI.achJust||{})[i]=true;
+    const rel=g.trophies.filter(x=>!x.dlc||(dlcById(g,x.dlc)||{owned:true}).owned);
+    if(t.done&&rel.length&&rel.every(x=>x.done)&&g.status!=='plat'&&g.status!=='cem'){g.status='plat';if(!g.finished)g.finished=new Date().toISOString().slice(0,10);UI.celebrate=g.id}
+    else if(!t.done&&g.status==='plat'&&rel.some(x=>!x.done)){g.status='jogando'}
+    save();
+    if(UI.celebrate){render();renderOverlay();return}
+    const l=document.getElementById('achlist');if(l){const y=window.scrollY;
+      el.setAttribute('aria-pressed',String(!!t.done));const ck=el.querySelector('.check');if(ck){ck.setAttribute('aria-pressed',String(!!t.done));ck.innerHTML=t.done?ICON.check:''}
+      const ic=el.querySelector('.troph-ico');if(ic)ic.className='troph-ico '+(t.done?effType(t,g.platform):'');
+      const m=document.querySelector('[data-act="achmiss"]');if(m)m.textContent='Só as que faltam · '+g.trophies.filter(x=>!x.done).length;
+      const pr=document.querySelector('.prog');if(pr){const p=prog(g);if(p){const lb=pr.querySelector('.mono'),bar=pr.querySelector('.meter span');if(lb)lb.textContent=p.label;if(bar)bar.style.width=p.pct+'%'}}
+      window.scrollTo(0,y)}else render()},
+  achmiss:()=>{UI.achMissing=!UI.achMissing;UI.achJust={};const g=S.games[UI.gameId],l=document.getElementById('achlist');if(g&&l){l.innerHTML=trophyGroupsHTML(g);const m=document.querySelector('[data-act="achmiss"]');if(m)m.setAttribute('aria-pressed',String(UI.achMissing))}else render()},
+
   fachtog:()=>{UI.formAchOpen=!UI.formAchOpen;render()},
 
   progopen:()=>{UI.view='prog';UI.progQ='';UI.progFilt='all';render();window.scrollTo(0,0)},
@@ -1940,6 +1990,8 @@ document.addEventListener('input',e=>{
   if(t.dataset.ct&&UI.catAch){UI.catAch[UI.catTab||'steam'][+t.dataset.i][t.dataset.ct]=t.value;return}
   if(t.id==='q'){UI.search=t.value;updateResults();return}
   if(t.id==='platq'&&UI.plat){UI.plat.q=t.value;const g=S.games[UI.gameId],l=document.getElementById('platlist');if(g&&l){const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),mine=new Set(groupIds(g)),q=norm(t.value).trim();let c=gamesList().filter(x=>!mine.has(x.id)&&isPrimary(x)&&(!q||norm(x.title).includes(q)));c.sort((a,b)=>String(a.title).localeCompare(String(b.title),'pt-BR'));l.innerHTML=platListHTML(c,q)}return}
+  if(t.id==='shelfq'){UI.shelfQ=t.value;const r=document.getElementById('shelfres');if(r)r.innerHTML=shelfResultsHTML();const c=document.querySelector('.sec.cont');if(c)c.hidden=!!t.value.trim();return}
+  if(t.id==='achq'){UI.achQ=t.value;const g=S.games[UI.gameId],l=document.getElementById('achlist');if(g&&l)l.innerHTML=trophyGroupsHTML(g);return}
   if(t.id==='collq'){UI.collQ=t.value;const ed=UI.collEdit&&S.collections.find(c=>c.id===UI.collEdit),l=document.getElementById('collist');if(ed&&l)l.innerHTML=collListHTML(ed);return}
   if(t.dataset.pq){UI.progQ=t.value;const g=S.games[UI.gameId],P=progData(g);if(P){const L=P.lists.find(l=>l.id===(UI.progTab||P.lists[0].id))||P.lists[0];document.getElementById('plist').innerHTML=progListHTML(g,P,L)}return}
   if(t.dataset.f&&UI.form){UI.form[t.dataset.f]=t.value;return}
